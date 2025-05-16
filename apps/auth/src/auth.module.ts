@@ -5,6 +5,7 @@ import { ConfigModule } from '@nestjs/config';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { User, UserSchema } from '@lib/common';
+import { HealthController } from './health.controller';
 
 @Module({
   imports: [
@@ -16,7 +17,7 @@ import { User, UserSchema } from '@lib/common';
       signOptions: { expiresIn: '1h' },
     }),
   ],
-  controllers: [AuthController],
+  controllers: [AuthController, HealthController],
   providers: [AuthService],
 })
 export class AuthModule {}

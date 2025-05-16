@@ -16,4 +16,4 @@ RUN npm install
 # 앱별 빌드 명령
 RUN npm run build auth
 
-CMD ["node", "dist/apps/auth/src/main.js"]
+CMD ["node", "dist/apps/auth/main.js"]

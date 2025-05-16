@@ -19,6 +19,8 @@ services:
     container_name: gateway
     ports:
       - "3000:3000"
+    volumes:
+      - ./ssl:/app/ssl  # 👈 로컬 인증서를 컨테이너에 마운트
     environment:
       PORT: 3000
       JWT_SECRET: my_jwt_secret
@@ -41,6 +43,7 @@ services:
       PORT: 3001
       JWT_SECRET: my_jwt_secret
       MONGO_URI: mongodb://mongodb:27017/event-reward-platform-dev
+      GATEWAY_SERVICE_URL: https://gateway:3000
     depends_on:
       - mongodb
 
@@ -53,7 +56,9 @@ services:
       - "3002:3002"
     environment:
       PORT: 3002
+      JWT_SECRET: my_jwt_secret
       MONGO_URI: mongodb://mongodb:27017/event-reward-platform-dev
+      GATEWAY_SERVICE_URL: https://gateway:3000
     depends_on:
       - mongodb
 
