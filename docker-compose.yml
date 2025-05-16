@@ -1,0 +1,61 @@
+version: "3.8"
+
+services:
+  mongodb:
+    image: mongo:7
+    container_name: mongodb
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+      - ./mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
+    environment: [ MONGO_INITDB_DATABASE=event-reward-platform-dev ]
+
+
+  gateway:
+    build:
+      context: .
+      dockerfile: ./apps/gateway/Dockerfile
+    container_name: gateway
+    ports:
+      - "3000:3000"
+    environment:
+      PORT: 3000
+      JWT_SECRET: my_jwt_secret
+      AUTH_SERVICE_URL: http://auth:3001
+      EVENT_SERVICE_URL: http://event:3002
+      MONGO_URI: mongodb://mongodb:27017/event-reward-platform-dev
+    depends_on:
+      - mongodb
+      - auth
+      - event
+
+  auth:
+    build:
+      context: .
+      dockerfile: ./apps/auth/Dockerfile
+    container_name: auth
+    ports:
+      - "3001:3001"
+    environment:
+      PORT: 3001
+      JWT_SECRET: my_jwt_secret
+      MONGO_URI: mongodb://mongodb:27017/event-reward-platform-dev
+    depends_on:
+      - mongodb
+
+  event:
+    build:
+      context: .
+      dockerfile: ./apps/event/Dockerfile
+    container_name: event
+    ports:
+      - "3002:3002"
+    environment:
+      PORT: 3002
+      MONGO_URI: mongodb://mongodb:27017/event-reward-platform-dev
+    depends_on:
+      - mongodb
+
+volumes:
+  mongo-data:
