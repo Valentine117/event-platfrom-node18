@@ -18,7 +18,12 @@ export class CreateEventDto {
   @IsString()
   description?: string;
 
-  @ApiProperty({ example: '2025-06-01T00:00:00.000Z' })
+  @ApiProperty({ example: 'ATT_001', description: '이벤트 코드' })
+  @IsString()
+  @IsNotEmpty()
+  code: string;
+
+  @ApiProperty({ example: '2025-05-01T00:00:00.000Z' })
   @IsDateString()
   startDate: Date;
 

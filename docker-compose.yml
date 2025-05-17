@@ -1,6 +1,24 @@
 version: "3.8"
 
 services:
+  redis:
+    image: redis:7
+    container_name: redis
+    ports:
+      - "6379:6379"
+    networks:
+      - app_net
+    restart: unless-stopped
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"   # AMQP
+      - "15672:15672" # 관리 UI
+    networks:
+      - app_net
+
   mongodb:
     image: mongo:7
     container_name: mongodb
@@ -29,6 +47,7 @@ services:
       AUTH_SERVICE_URL: http://auth:3001
       EVENT_SERVICE_URL: http://event:3002
       MONGO_URI: mongodb://mongodb:27017/event-reward-platform-dev
+      REDIS_URL: redis://redis:6379
     depends_on:
       - mongodb
       - auth
@@ -66,8 +85,10 @@ services:
       JWT_SECRET: my_jwt_secret
       MONGO_URI: mongodb://mongodb:27017/event-reward-platform-dev
       GATEWAY_SERVICE_URL: https://gateway:3000
+      REDIS_URL: redis://redis:6379
     depends_on:
       - mongodb
+      - redis
     networks:
       - app_net
 

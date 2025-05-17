@@ -8,6 +8,7 @@
     "interceptor",
     "filter",
     "에러 핸들링",
-    "필수 값 badRequest 처리 Dto 정의"
+    "필수 값 badRequest 처리 Dto 정의",
+    "출석체크 mq + Redis"
   ]
 }

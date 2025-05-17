@@ -19,9 +19,12 @@ import {
   UserSchema,
 } from '@lib/common';
 import { IpWhitelistMiddleware } from './config/whitelist.middleware';
+import { RedisModule } from './config/redis.module';
+import { LoginAttendanceConsumer } from './config/login-attendance.consumer';
 
 @Module({
   imports: [
+    RedisModule,
     ConfigModule.forRoot({ isGlobal: true }),
     MongooseModule.forRoot(process.env.MONGO_URI),
     MongooseModule.forFeature([
@@ -34,7 +37,7 @@ import { IpWhitelistMiddleware } from './config/whitelist.middleware';
       secret: process.env.JWT_SECRET,
     }),
   ],
-  controllers: [EventController, HealthController],
+  controllers: [EventController, HealthController, LoginAttendanceConsumer],
   providers: [
     EventService,
     CustomLogger,

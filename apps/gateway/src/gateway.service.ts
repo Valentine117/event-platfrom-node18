@@ -1,13 +1,16 @@
 import { HttpService } from '@nestjs/axios';
 import { HttpException, Injectable } from '@nestjs/common';
-import { RegisterDto, LoginDto } from '@lib/common';
+import { RegisterDto, LoginDto, LoginEventPublisher } from '@lib/common';
 import { lastValueFrom } from 'rxjs';
 
 @Injectable()
 export class GatewayService {
   private readonly authBaseUrl: string;
 
-  constructor(private readonly httpService: HttpService) {
+  constructor(
+    private readonly httpService: HttpService,
+    private readonly loginEventPublisher: LoginEventPublisher,
+  ) {
     this.authBaseUrl = process.env.AUTH_SERVICE_URL;
   }
 
@@ -30,6 +33,12 @@ export class GatewayService {
       const response = await lastValueFrom(
         this.httpService.post(`${this.authBaseUrl}/auth/login`, dto),
       );
+
+      const { email } = dto;
+      if (email) {
+        await this.loginEventPublisher.publishLoginEvent(email);
+      }
+
       return response.data; // accessToken 포함됨
     } catch (error) {
       throw new HttpException(

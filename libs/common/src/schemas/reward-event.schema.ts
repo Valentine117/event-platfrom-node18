@@ -20,6 +20,9 @@ export class RewardEvent {
   status: EventStatus;
 
   @Prop({ required: true })
+  code: string;
+
+  @Prop({ required: true })
   startDate: Date;
 
   @Prop({ required: true })

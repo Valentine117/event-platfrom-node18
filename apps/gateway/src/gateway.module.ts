@@ -13,7 +13,9 @@ import {
   AllExceptionsFilter,
   CustomLogger,
   LoggingInterceptor,
+  LoginEventPublisher,
 } from '@lib/common';
+import { RedisModule } from './config/redis.module';
 
 @Module({
   imports: [
@@ -23,6 +25,7 @@ import {
     JwtModule.register({
       secret: process.env.JWT_SECRET,
     }),
+    RedisModule,
   ],
   controllers: [GatewayController, HealthController, EventController],
   providers: [
@@ -32,6 +35,7 @@ import {
     CustomLogger,
     LoggingInterceptor,
     AllExceptionsFilter,
+    LoginEventPublisher,
   ],
 })
 export class GatewayModule {}
