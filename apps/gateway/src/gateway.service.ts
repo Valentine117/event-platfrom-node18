@@ -2,6 +2,7 @@ import { HttpService } from '@nestjs/axios';
 import { HttpException, Injectable } from '@nestjs/common';
 import { RegisterDto, LoginDto, LoginEventPublisher } from '@lib/common';
 import { lastValueFrom } from 'rxjs';
+import { JwtService } from '@nestjs/jwt';
 
 @Injectable()
 export class GatewayService {
@@ -10,6 +11,7 @@ export class GatewayService {
   constructor(
     private readonly httpService: HttpService,
     private readonly loginEventPublisher: LoginEventPublisher,
+    private readonly jwtService: JwtService,
   ) {
     this.authBaseUrl = process.env.AUTH_SERVICE_URL;
   }
@@ -34,12 +36,18 @@ export class GatewayService {
         this.httpService.post(`${this.authBaseUrl}/auth/login`, dto),
       );
 
-      const { email } = dto;
-      if (email) {
-        await this.loginEventPublisher.publishLoginEvent(email);
+      const accessToken = response.data?.accessToken;
+      const decoded = this.jwtService.decode(accessToken) as {
+        sub: string;
+        email: string;
+      };
+
+      const userId = decoded?.sub;
+      if (userId) {
+        this.loginEventPublisher.publishLoginEvent(userId).catch(console.error);
       }
 
-      return response.data; // accessToken 포함됨
+      return response.data;
     } catch (error) {
       throw new HttpException(
         error?.response?.data || '로그인 실패.',

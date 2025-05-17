@@ -8,17 +8,17 @@ import {
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class CreateEventDto {
-  @ApiProperty({ example: '출석 이벤트', description: '이벤트 이름' })
+  @ApiProperty({ example: '테스트 이벤트', description: '이벤트 이름' })
   @IsString()
   @IsNotEmpty()
   name: string;
 
-  @ApiPropertyOptional({ example: '매일 출석 시 포인트 지급' })
+  @ApiPropertyOptional({ example: '특정 조건 발동 시 보상을 지급하는 이벤트' })
   @IsOptional()
   @IsString()
   description?: string;
 
-  @ApiProperty({ example: 'ATT_001', description: '이벤트 코드' })
+  @ApiProperty({ example: 'TES_001', description: '이벤트 코드' })
   @IsString()
   @IsNotEmpty()
   code: string;
