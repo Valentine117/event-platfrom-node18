@@ -1,5 +1,5 @@
 import { HttpService } from '@nestjs/axios';
-import { Injectable, InternalServerErrorException } from '@nestjs/common';
+import { HttpException, Injectable } from '@nestjs/common';
 import { RegisterDto, LoginDto } from '@lib/common';
 import { lastValueFrom } from 'rxjs';
 
@@ -18,8 +18,9 @@ export class GatewayService {
       );
       return response.data;
     } catch (error) {
-      throw new InternalServerErrorException(
-        error?.response?.data?.message || 'Register failed',
+      throw new HttpException(
+        error?.response?.data || '회원가입 실패.',
+        error?.response?.status || 500,
       );
     }
   }
@@ -31,8 +32,9 @@ export class GatewayService {
       );
       return response.data; // accessToken 포함됨
     } catch (error) {
-      throw new InternalServerErrorException(
-        error?.response?.data?.message || 'Login failed',
+      throw new HttpException(
+        error?.response?.data || '로그인 실패.',
+        error?.response?.status || 500,
       );
     }
   }

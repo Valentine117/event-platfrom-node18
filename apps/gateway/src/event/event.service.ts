@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { HttpException, Injectable } from '@nestjs/common';
 import axios from 'axios';
 import { ConfigService } from '@nestjs/config';
 
@@ -14,9 +14,18 @@ export class EventService {
     const headers = user
       ? { Authorization: `Bearer ${user.accessToken}` }
       : undefined;
-
-    const { data } = await axios.get(`${this.baseUrl}${path}`, { headers });
-    return data;
+    console.log(`gateway user.accessToken: ${user.accessToken}`);
+    try {
+      const { data } = await axios.get(`${this.baseUrl}${path}`, { headers });
+      return data;
+    } catch (error) {
+      if (error.response) {
+        throw new HttpException(
+          error?.response?.data || 'Internal Server Error.',
+          error?.response?.status || 500,
+        );
+      }
+    }
   }
 
   async proxyPost(path: string, body: any, user?: any) {
@@ -24,9 +33,18 @@ export class EventService {
       ? { Authorization: `Bearer ${user.accessToken}` }
       : undefined;
 
-    const { data } = await axios.post(`${this.baseUrl}${path}`, body, {
-      headers,
-    });
-    return data;
+    try {
+      const { data } = await axios.post(`${this.baseUrl}${path}`, body, {
+        headers,
+      });
+      return data;
+    } catch (error) {
+      if (error.response) {
+        throw new HttpException(
+          error?.response?.data || 'Internal Server Error.',
+          error?.response?.status || 500,
+        );
+      }
+    }
   }
 }

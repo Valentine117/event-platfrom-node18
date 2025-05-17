@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule } from '@nestjs/config';
@@ -6,6 +6,7 @@ import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { User, UserSchema } from '@lib/common';
 import { HealthController } from './health/health.controller';
+import { IpWhitelistMiddleware } from '../../event/src/config/whitelist.middleware';
 
 @Module({
   imports: [
@@ -20,4 +21,8 @@ import { HealthController } from './health/health.controller';
   controllers: [AuthController, HealthController],
   providers: [AuthService],
 })
-export class AuthModule {}
+export class AuthModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer.apply(IpWhitelistMiddleware).forRoutes('*'); // 모든 경로 보호
+  }
+}

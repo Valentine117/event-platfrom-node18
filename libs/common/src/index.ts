@@ -15,3 +15,7 @@ export * from './schemas/reward-request.schema';
 export * from './guards/jwt-auth.guard';
 export * from './guards/roles.guard';
 export * from './guards/roles.decorator';
+
+//loggers
+
+export * from './loggers/custom-logger.service';

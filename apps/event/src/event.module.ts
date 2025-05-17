@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { EventController } from './event.controller';
 import { EventService } from './event.service';
 import { HealthController } from './health/health.controller';
@@ -13,6 +13,7 @@ import {
   RewardRequest,
   RewardRequestSchema,
 } from '@lib/common';
+import { IpWhitelistMiddleware } from './config/whitelist.middleware';
 
 @Module({
   imports: [
@@ -30,4 +31,8 @@ import {
   controllers: [EventController, HealthController],
   providers: [EventService],
 })
-export class EventModule {}
+export class EventModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer.apply(IpWhitelistMiddleware).forRoutes('*'); // 모든 경로 보호
+  }
+}

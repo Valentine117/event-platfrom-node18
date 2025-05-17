@@ -1,6 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { GatewayModule } from './gateway.module';
 import * as fs from 'fs';
+import { CustomLogger } from '@lib/common';
 
 async function bootstrap() {
   const httpsOptions = {
@@ -11,6 +12,8 @@ async function bootstrap() {
   const app = await NestFactory.create(GatewayModule, {
     httpsOptions,
   });
+
+  app.useLogger(app.get(CustomLogger));
 
   await app.listen(3000);
 }
