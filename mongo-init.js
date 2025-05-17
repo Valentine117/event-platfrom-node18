@@ -31,4 +31,29 @@ const reward = {
 
 db.rewards.insertOne(reward);
 
-print('✅ 출석 이벤트(ATT_101) 및 보상 데이터 초기화 완료');
+// ATT_102 (5회 로그인 이스터에그 이벤트)
+const eggEvent = {
+  code: 'ATT_102',
+  name: '이스터 에그 이벤트',
+  description: '하루 로그인 5회 시 보상 지급!',
+  status: 'ACTIVE',
+  startDate: new Date('2025-01-01'),
+  endDate: new Date('2025-12-31'),
+  conditions: {
+    type: 'login_count',
+    threshold: 5,
+  },
+  createdAt: new Date(),
+  updatedAt: new Date(),
+};
+
+const eggResult = db.rewardevents.insertOne(eggEvent);
+
+db.rewards.insertOne({
+  name: '이스터 에그 포인트 100',
+  type: 'POINT',
+  quantity: 100,
+  eventId: eggResult.insertedId,
+  createdAt: new Date(),
+  updatedAt: new Date(),
+});

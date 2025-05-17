@@ -20,7 +20,8 @@ import {
 } from '@lib/common';
 import { IpWhitelistMiddleware } from './config/whitelist.middleware';
 import { RedisModule } from './config/redis.module';
-import { LoginAttendanceConsumer } from './config/login-attendance.consumer';
+import { LoginAttendanceConsumer } from './engine/login-attendance.consumer';
+import { RewardGrantService } from './engine/reward-grant.service';
 
 @Module({
   imports: [
@@ -43,6 +44,7 @@ import { LoginAttendanceConsumer } from './config/login-attendance.consumer';
     CustomLogger,
     LoggingInterceptor,
     AllExceptionsFilter,
+    RewardGrantService,
   ],
 })
 export class EventModule implements NestModule {
