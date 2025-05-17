@@ -8,8 +8,14 @@ import {
   Req,
 } from '@nestjs/common';
 import { EventService } from './event.service';
-import { CreateEventDto, CreateRewardDto, RequestRewardDto } from '@lib/common';
-import { JwtAuthGuard, Roles, RolesGuard } from '@lib/common';
+import {
+  CreateEventDto,
+  CreateRewardDto,
+  JwtAuthGuard,
+  RequestRewardDto,
+  Roles,
+  RolesGuard,
+} from '@lib/common';
 
 @Controller('event')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -19,12 +25,12 @@ export class EventController {
   @Post()
   @Roles('OPERATOR')
   createEvent(@Body() dto: CreateEventDto) {
-    return this.eventService.createEvent(dto);
+    return this.eventService.proxyPost('/event', dto);
   }
 
   @Get()
   getEvents() {
-    return this.eventService.getEvents();
+    return this.eventService.proxyGet('/event');
   }
 
   @Post(':eventId/rewards')
@@ -33,7 +39,7 @@ export class EventController {
     @Param('eventId') eventId: string,
     @Body() dto: CreateRewardDto,
   ) {
-    return this.eventService.createReward(eventId, dto);
+    return this.eventService.proxyPost(`/event/${eventId}/rewards`, dto);
   }
 
   @Post(':eventId/request')
@@ -43,18 +49,22 @@ export class EventController {
     @Req() req,
     @Body() dto: RequestRewardDto,
   ) {
-    return this.eventService.requestReward(eventId, req.user.sub, dto);
+    return this.eventService.proxyPost(
+      `/event/${eventId}/request`,
+      dto,
+      req.user,
+    );
   }
 
   @Get('requests')
-  @Roles('AUDITOR', 'ADMIN')
+  @Roles('ADMIN', 'AUDITOR')
   getAllRequests() {
-    return this.eventService.getAllRequests();
+    return this.eventService.proxyGet('/event/requests');
   }
 
   @Get('requests/me')
   @Roles('USER')
   getMyRequests(@Req() req) {
-    return this.eventService.getRequestsByUser(req.user.sub);
+    return this.eventService.proxyGet('/event/requests/me', req.user);
   }
 }

@@ -8,7 +8,7 @@ export class GatewayService {
   private readonly authBaseUrl: string;
 
   constructor(private readonly httpService: HttpService) {
-    this.authBaseUrl = process.env.AUTH_SERVICE_URL || 'http://localhost:3001';
+    this.authBaseUrl = process.env.AUTH_SERVICE_URL;
   }
 
   async forwardRegister(dto: RegisterDto) {
