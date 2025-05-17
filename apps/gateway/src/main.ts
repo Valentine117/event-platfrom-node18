@@ -7,6 +7,7 @@ import {
   LoggingInterceptor,
 } from '@lib/common';
 import { ValidationPipe } from '@nestjs/common';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
 async function bootstrap() {
   const httpsOptions = {
@@ -29,6 +30,16 @@ async function bootstrap() {
       transform: true, // 타입 자동 변환
     }),
   );
+
+  const config = new DocumentBuilder()
+    .setTitle('Event Platform API')
+    .setDescription('이벤트/보상 플랫폼 Swagger 문서')
+    .setVersion('1.0')
+    .addBearerAuth()
+    .build();
+
+  const document = SwaggerModule.createDocument(app, config);
+  SwaggerModule.setup('apis', app, document); // http://localhost:3000/apis
 
   await app.listen(3000);
 }

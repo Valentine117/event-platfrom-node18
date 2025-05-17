@@ -1,16 +1,14 @@
-import { IsEmail, IsEnum, IsNotEmpty, MinLength } from 'class-validator';
-import { UserRole } from '../../schemas/user.schema';
+import { IsEmail, IsNotEmpty, MinLength } from 'class-validator';
+import { ApiProperty } from '@nestjs/swagger';
 
-export class RegisterDto {
+export class LoginDto {
+  @ApiProperty({ example: 'user@example.com' })
   @IsEmail()
   @IsNotEmpty()
   email: string;
 
+  @ApiProperty({ example: 'securePass123' })
   @MinLength(6)
   @IsNotEmpty()
   password: string;
-
-  @IsEnum(UserRole)
-  @IsNotEmpty()
-  role: UserRole;
 }

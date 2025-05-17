@@ -1,6 +1,6 @@
 // dtos
-export * from './dtos/auth/login.dto';
 export * from './dtos/auth/register.dto';
+export * from './dtos/auth/login.dto';
 export * from '@lib/common/dtos/event/create-event.dto';
 export * from '@lib/common/dtos/event/create-reward.dto';
 export * from '@lib/common/dtos/event/request-reward.dto';
