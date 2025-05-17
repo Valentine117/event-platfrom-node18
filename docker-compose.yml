@@ -10,6 +10,8 @@ services:
       - mongo-data:/data/db
       - ./mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
     environment: [ MONGO_INITDB_DATABASE=event-reward-platform-dev ]
+    networks:
+      - app_net
 
 
   gateway:
@@ -31,6 +33,9 @@ services:
       - mongodb
       - auth
       - event
+    networks:
+      app_net:
+        ipv4_address: 172.19.0.100 # 화이트 리스트 관리를 위한 gateway ip 고정
 
   auth:
     build:
@@ -46,6 +51,8 @@ services:
       GATEWAY_SERVICE_URL: https://gateway:3000
     depends_on:
       - mongodb
+    networks:
+      - app_net
 
   event:
     build:
@@ -61,6 +68,15 @@ services:
       GATEWAY_SERVICE_URL: https://gateway:3000
     depends_on:
       - mongodb
+    networks:
+      - app_net
 
 volumes:
   mongo-data:
+
+networks:
+  app_net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.19.0.0/16

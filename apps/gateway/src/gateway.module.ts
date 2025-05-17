@@ -9,6 +9,11 @@ import { HealthService } from './health/health.service';
 import { EventController } from './event/event.controller';
 import { JwtModule } from '@nestjs/jwt';
 import { EventService } from './event/event.service';
+import {
+  AllExceptionsFilter,
+  CustomLogger,
+  LoggingInterceptor,
+} from '@lib/common';
 
 @Module({
   imports: [
@@ -20,6 +25,13 @@ import { EventService } from './event/event.service';
     }),
   ],
   controllers: [GatewayController, HealthController, EventController],
-  providers: [GatewayService, HealthService, EventService],
+  providers: [
+    GatewayService,
+    HealthService,
+    EventService,
+    CustomLogger,
+    LoggingInterceptor,
+    AllExceptionsFilter,
+  ],
 })
 export class GatewayModule {}

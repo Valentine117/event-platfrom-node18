@@ -12,6 +12,9 @@ import {
   RewardSchema,
   RewardRequest,
   RewardRequestSchema,
+  CustomLogger,
+  LoggingInterceptor,
+  AllExceptionsFilter,
 } from '@lib/common';
 import { IpWhitelistMiddleware } from './config/whitelist.middleware';
 
@@ -29,7 +32,12 @@ import { IpWhitelistMiddleware } from './config/whitelist.middleware';
     }),
   ],
   controllers: [EventController, HealthController],
-  providers: [EventService],
+  providers: [
+    EventService,
+    CustomLogger,
+    LoggingInterceptor,
+    AllExceptionsFilter,
+  ],
 })
 export class EventModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {

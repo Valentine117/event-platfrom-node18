@@ -4,9 +4,15 @@ import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule } from '@nestjs/config';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
-import { User, UserSchema } from '@lib/common';
+import {
+  AllExceptionsFilter,
+  CustomLogger,
+  LoggingInterceptor,
+  User,
+  UserSchema,
+} from '@lib/common';
 import { HealthController } from './health/health.controller';
-import { IpWhitelistMiddleware } from '../../event/src/config/whitelist.middleware';
+import { IpWhitelistMiddleware } from './config/whitelist.middleware';
 
 @Module({
   imports: [
@@ -19,7 +25,12 @@ import { IpWhitelistMiddleware } from '../../event/src/config/whitelist.middlewa
     }),
   ],
   controllers: [AuthController, HealthController],
-  providers: [AuthService],
+  providers: [
+    AuthService,
+    CustomLogger,
+    LoggingInterceptor,
+    AllExceptionsFilter,
+  ],
 })
 export class AuthModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {

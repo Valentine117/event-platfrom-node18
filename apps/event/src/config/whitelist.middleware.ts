@@ -8,7 +8,7 @@ export class IpWhitelistMiddleware implements NestMiddleware {
 
     console.log('Request from:', remoteAddress); // 확인용
 
-    if (!remoteAddress?.includes('gateway')) {
+    if (!remoteAddress?.includes('172.19.0.100')) {
       throw new ForbiddenException('Only gateway can access auth');
     }
 

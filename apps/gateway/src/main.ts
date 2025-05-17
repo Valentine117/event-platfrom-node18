@@ -1,7 +1,11 @@
 import { NestFactory } from '@nestjs/core';
 import { GatewayModule } from './gateway.module';
 import * as fs from 'fs';
-import { CustomLogger } from '@lib/common';
+import {
+  AllExceptionsFilter,
+  CustomLogger,
+  LoggingInterceptor,
+} from '@lib/common';
 
 async function bootstrap() {
   const httpsOptions = {
@@ -14,6 +18,8 @@ async function bootstrap() {
   });
 
   app.useLogger(app.get(CustomLogger));
+  app.useGlobalInterceptors(app.get(LoggingInterceptor));
+  app.useGlobalFilters(app.get(AllExceptionsFilter));
 
   await app.listen(3000);
 }
