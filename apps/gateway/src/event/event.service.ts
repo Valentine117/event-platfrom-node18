@@ -10,11 +10,11 @@ export class EventService {
     this.baseUrl = this.configService.get<string>('EVENT_SERVICE_URL');
   }
 
-  async proxyGet(path: string, user?: any) {
-    const headers = user
-      ? { Authorization: `Bearer ${user.accessToken}` }
+  async proxyGet(path: string, authorizationHeader?: any) {
+    const headers = authorizationHeader
+      ? { Authorization: authorizationHeader }
       : undefined;
-    console.log(`gateway user.accessToken: ${user.accessToken}`);
+
     try {
       const { data } = await axios.get(`${this.baseUrl}${path}`, { headers });
       return data;
@@ -28,9 +28,9 @@ export class EventService {
     }
   }
 
-  async proxyPost(path: string, body: any, user?: any) {
-    const headers = user
-      ? { Authorization: `Bearer ${user.accessToken}` }
+  async proxyPost(path: string, body: any, authorizationHeader?: any) {
+    const headers = authorizationHeader
+      ? { Authorization: authorizationHeader }
       : undefined;
 
     try {

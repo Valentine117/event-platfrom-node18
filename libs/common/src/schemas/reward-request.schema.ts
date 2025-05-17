@@ -14,7 +14,7 @@ export class RewardRequest {
   @Prop({ type: Types.ObjectId, ref: 'User', required: true })
   userId: Types.ObjectId;
 
-  @Prop({ type: Types.ObjectId, ref: 'Event', required: true })
+  @Prop({ type: Types.ObjectId, ref: 'RewardEvent', required: true })
   eventId: Types.ObjectId;
 
   @Prop({ type: Types.ObjectId, ref: 'Reward', required: true })

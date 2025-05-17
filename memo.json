@@ -1,5 +1,13 @@
 {
   "achieve": [
-    "mono library 통합 관리" ,"https", "whiteList", "Health check"
+    "mono library 통합 관리",
+    "https",
+    "whiteList ip고정",
+    "Health check",
+    "logging",
+    "interceptor",
+    "filter",
+    "에러 핸들링",
+    "필수 값 badRequest 처리 Dto 정의"
   ]
 }

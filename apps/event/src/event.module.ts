@@ -15,6 +15,8 @@ import {
   CustomLogger,
   LoggingInterceptor,
   AllExceptionsFilter,
+  User,
+  UserSchema,
 } from '@lib/common';
 import { IpWhitelistMiddleware } from './config/whitelist.middleware';
 
@@ -26,6 +28,7 @@ import { IpWhitelistMiddleware } from './config/whitelist.middleware';
       { name: RewardEvent.name, schema: RewardEventSchema },
       { name: Reward.name, schema: RewardSchema },
       { name: RewardRequest.name, schema: RewardRequestSchema },
+      { name: User.name, schema: UserSchema },
     ]),
     JwtModule.register({
       secret: process.env.JWT_SECRET,
@@ -41,6 +44,6 @@ import { IpWhitelistMiddleware } from './config/whitelist.middleware';
 })
 export class EventModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
-    consumer.apply(IpWhitelistMiddleware).forRoutes('*'); // 모든 경로 보호
+    consumer.apply(IpWhitelistMiddleware).forRoutes('*');
   }
 }

@@ -24,13 +24,17 @@ export class EventController {
 
   @Post()
   @Roles('OPERATOR')
-  createEvent(@Body() dto: CreateEventDto) {
-    return this.eventService.proxyPost('/event', dto);
+  createEvent(@Body() dto: CreateEventDto, @Req() req) {
+    return this.eventService.proxyPost(
+      '/event',
+      dto,
+      req?.headers?.authorization,
+    );
   }
 
   @Get()
-  getEvents() {
-    return this.eventService.proxyGet('/event');
+  getEvents(@Req() req) {
+    return this.eventService.proxyGet('/event', req?.headers?.authorization);
   }
 
   @Post(':eventId/rewards')
@@ -38,8 +42,13 @@ export class EventController {
   createReward(
     @Param('eventId') eventId: string,
     @Body() dto: CreateRewardDto,
+    @Req() req,
   ) {
-    return this.eventService.proxyPost(`/event/${eventId}/rewards`, dto);
+    return this.eventService.proxyPost(
+      `/event/${eventId}/rewards`,
+      dto,
+      req?.headers?.authorization,
+    );
   }
 
   @Post(':eventId/request')
@@ -52,19 +61,25 @@ export class EventController {
     return this.eventService.proxyPost(
       `/event/${eventId}/request`,
       dto,
-      req.user,
+      req?.headers?.authorization,
     );
   }
 
   @Get('requests')
   @Roles('ADMIN', 'AUDITOR')
-  getAllRequests() {
-    return this.eventService.proxyGet('/event/requests');
+  getAllRequests(@Req() req) {
+    return this.eventService.proxyGet(
+      '/event/requests',
+      req?.headers?.authorization,
+    );
   }
 
   @Get('requests/me')
   @Roles('USER')
   getMyRequests(@Req() req) {
-    return this.eventService.proxyGet('/event/requests/me', req.user);
+    return this.eventService.proxyGet(
+      '/event/requests/me',
+      req?.headers?.authorization,
+    );
   }
 }

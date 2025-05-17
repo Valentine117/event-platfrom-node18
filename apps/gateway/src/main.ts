@@ -6,6 +6,7 @@ import {
   CustomLogger,
   LoggingInterceptor,
 } from '@lib/common';
+import { ValidationPipe } from '@nestjs/common';
 
 async function bootstrap() {
   const httpsOptions = {
@@ -20,6 +21,14 @@ async function bootstrap() {
   app.useLogger(app.get(CustomLogger));
   app.useGlobalInterceptors(app.get(LoggingInterceptor));
   app.useGlobalFilters(app.get(AllExceptionsFilter));
+
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true, // DTO에 없는 값 제거
+      forbidNonWhitelisted: true, // 허용되지 않은 값 있으면 에러
+      transform: true, // 타입 자동 변환
+    }),
+  );
 
   await app.listen(3000);
 }

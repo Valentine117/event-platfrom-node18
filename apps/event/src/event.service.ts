@@ -1,4 +1,9 @@
-import { Injectable } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
+  InternalServerErrorException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import {
   RewardEvent,
@@ -25,26 +30,49 @@ export class EventService {
   ) {}
 
   async createEvent(dto: CreateEventDto) {
-    return this.eventModel.create(dto);
+    try {
+      return await this.eventModel.create(dto);
+    } catch {
+      throw new InternalServerErrorException(
+        '이벤트 생성 중 오류가 발생했습니다.',
+      );
+    }
   }
 
   async getEvents() {
-    return this.eventModel.find().exec();
+    try {
+      return await this.eventModel.find().exec();
+    } catch {
+      throw new InternalServerErrorException(
+        '이벤트 목록 조회 중 오류가 발생했습니다.',
+      );
+    }
   }
 
   async createReward(eventId: string, dto: CreateRewardDto) {
-    return this.rewardModel.create({ ...dto, eventId });
+    const event = await this.eventModel.findById(eventId);
+    if (!event) throw new NotFoundException('이벤트를 찾을 수 없습니다.');
+
+    try {
+      return await this.rewardModel.create({ ...dto, eventId });
+    } catch {
+      throw new InternalServerErrorException(
+        '보상 생성 중 오류가 발생했습니다.',
+      );
+    }
   }
 
   async requestReward(eventId: string, userId: string, dto: RequestRewardDto) {
     const exists = await this.requestModel.findOne({ eventId, userId });
-    if (exists) throw new Error('Already requested');
+    if (exists) {
+      throw new ConflictException('이미 요청한 이벤트입니다.');
+    }
 
     const reward = await this.rewardModel.findOne({
       _id: dto.rewardId,
       eventId,
     });
-    if (!reward) throw new Error('Reward not found');
+    if (!reward) throw new NotFoundException('해당 보상을 찾을 수 없습니다.');
 
     const req = new this.requestModel({
       eventId,
@@ -53,14 +81,34 @@ export class EventService {
       status: 'SUCCESS',
     });
 
-    return req.save();
+    try {
+      return await req.save();
+    } catch {
+      throw new InternalServerErrorException(
+        '보상 요청 저장 중 오류가 발생했습니다.',
+      );
+    }
   }
 
   async getAllRequests() {
-    return this.requestModel.find().populate('rewardId eventId userId');
+    try {
+      return await this.requestModel.find().populate('rewardId eventId userId');
+    } catch {
+      throw new InternalServerErrorException(
+        '요청 목록 조회 중 오류가 발생했습니다.',
+      );
+    }
   }
 
   async getRequestsByUser(userId: string) {
-    return this.requestModel.find({ userId }).populate('rewardId eventId');
+    try {
+      return await this.requestModel
+        .find({ userId })
+        .populate('rewardId eventId');
+    } catch {
+      throw new InternalServerErrorException(
+        '내 요청 목록 조회 중 오류가 발생했습니다.',
+      );
+    }
   }
 }
