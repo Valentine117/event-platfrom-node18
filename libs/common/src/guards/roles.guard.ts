@@ -15,11 +15,24 @@ export class RolesGuard implements CanActivate {
       context.getHandler(),
       context.getClass(),
     ]);
-    if (!requiredRoles) return true;
 
     const { user } = context.switchToHttp().getRequest();
-    if (!user || !requiredRoles.includes(user.role)) {
-      throw new ForbiddenException('Forbidden: insufficient role');
+
+    // 사용자 정보가 없으면 차단
+    if (!user) {
+      throw new ForbiddenException('권한 정보가 없습니다.');
+    }
+
+    // ADMIN은 모든 권한 허용
+    if (user.role === 'ADMIN') {
+      return true;
+    }
+
+    // 다른 역할의 경우, 해당 역할 포함 여부 검사
+    if (!requiredRoles) return true;
+
+    if (!requiredRoles.includes(user.role)) {
+      throw new ForbiddenException('접근 권한이 없습니다.');
     }
 
     return true;

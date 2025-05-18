@@ -12,7 +12,9 @@ export class GatewayController {
   @ApiOperation({
     summary: '회원가입',
     description:
-      '새로운 사용자를 등록합니다. role: USER | OPERATOR | AUDITOR | ADMIN 중 선택',
+      '새로운 사용자를 등록합니다. ' +
+      '\nrole: USER | OPERATOR | AUDITOR | ADMIN 중 선택' +
+      '\nADMIN 계정은 모든 권한에 접근 가능합니다.',
   })
   register(@Body() dto: RegisterDto) {
     return this.gatewayService.forwardRegister(dto);

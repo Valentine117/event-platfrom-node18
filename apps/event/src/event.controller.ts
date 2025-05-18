@@ -47,7 +47,7 @@ export class EventController {
   }
 
   @Get('requests')
-  @Roles('AUDITOR', 'ADMIN')
+  @Roles('AUDITOR')
   getAllRequests() {
     return this.eventService.getAllRequests();
   }
