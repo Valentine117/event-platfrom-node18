@@ -57,6 +57,109 @@
 - `docker-compose up --build` 시 `mongo-init.js`로 초기 이벤트 및 보상 등록.
 - 로그인 성공 시 Gateway가 `userId`를 RabbitMQ로 발행, 이벤트 서버는 Redis로 조건 검증 후 보상 지급.
 
+## 스키마 구조
+### User 사용자/관리자
+```ts
+export enum UserRole {
+  USER = 'USER',
+  OPERATOR = 'OPERATOR',
+  AUDITOR = 'AUDITOR',
+  ADMIN = 'ADMIN',
+}
+
+@Schema({ timestamps: true })
+export class User {
+  @Prop({ required: true, unique: true })
+  email: string;
+
+  @Prop({ required: true })
+  password: string;
+
+  @Prop({ required: true, enum: UserRole, default: UserRole.USER })
+  role: UserRole;
+}
+```
+
+### RewardEvent 이벤트
+```ts
+export enum EventStatus {
+  ACTIVE = 'ACTIVE',
+  INACTIVE = 'INACTIVE',
+}
+
+@Schema({ timestamps: true })
+export class RewardEvent {
+  @Prop({ required: true })
+  name: string;
+
+  @Prop()
+  description: string;
+
+  @Prop({ required: true, enum: EventStatus, default: EventStatus.INACTIVE })
+  status: EventStatus;
+
+  @Prop({ required: true })
+  code: string;
+
+  @Prop({ required: true })
+  startDate: Date;
+
+  @Prop({ required: true })
+  endDate: Date;
+
+  @Prop({ required: true, type: Object })
+  conditions: Record<string, any>;
+}
+```
+
+### Reward 이벤트 보상
+```ts
+export enum RewardType {
+  POINT = 'POINT',
+  ITEM = 'ITEM',
+  COUPON = 'COUPON',
+}
+
+@Schema({ timestamps: true })
+export class Reward {
+  @Prop({ required: true })
+  name: string;
+
+  @Prop({ enum: RewardType, required: true })
+  type: RewardType;
+
+  @Prop({ required: true })
+  quantity: number;
+
+  @Prop({ type: Types.ObjectId, ref: 'Event', required: true })
+  eventId: Types.ObjectId;
+}
+```
+
+### RewardRequest 유저 보상 발급 이력
+```ts
+export enum RewardRequestStatus {
+  PENDING = 'PENDING',
+  SUCCESS = 'SUCCESS',
+  FAILED = 'FAILED',
+}
+
+@Schema({ timestamps: true })
+export class RewardRequest {
+  @Prop({ type: Types.ObjectId, ref: 'User', required: true })
+  userId: Types.ObjectId;
+
+  @Prop({ type: Types.ObjectId, ref: 'RewardEvent', required: true })
+  eventId: Types.ObjectId;
+
+  @Prop({ type: Types.ObjectId, ref: 'Reward', required: true })
+  rewardId: Types.ObjectId;
+
+  @Prop({ enum: RewardRequestStatus, default: RewardRequestStatus.PENDING })
+  status: RewardRequestStatus;
+}
+```
+
 ## 테스트 방법
 ### 1. 프로젝트 실행
 ```bash
