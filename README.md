@@ -79,7 +79,6 @@ docker-compose down -v --remove-orphans
 ### 4. API 테스트 (사전 등록 이벤트 보상 흐름)
 #### (1) 헬스 체크
 ```bash
-docker-compose up --build
 curl -k 'https://localhost:3000/health'
 ```
 - 응답 (초기 RabbitMQ 부팅 지연으로 이벤트 상태 `fail` 가능):
@@ -316,16 +315,26 @@ curl -k 'https://localhost:3000/event/requests/me' \
 - 이벤트/보상 등록 및 요청은 `https://localhost:3000/apis` 또는 Postman으로 역할별 테스트 가능.
 
 ## 구현 중 고민과 선택
-### 1. 출석 보상 중복 방지
+### JWT + 역할 기반(Role-Based) 접근 제어
+```ts
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles('ADMIN')
+@Get('/event/requests')
+getAllRequests() {
+  return this.eventService.getAllRequests();
+}
+```
+
+### 출석 보상 중복 방지
 - Redis TTL(86400초)로 출석 보상 중복 지급 방지.
 
-### 2. RabbitMQ 안정성
+### RabbitMQ 안정성
 - 메시지 발행 실패가 로그인 실패로 이어지지 않도록 `fire-and-forget` 방식 채택.
 
-### 3. 공용 라이브러리
+### 공용 라이브러리
 - `@lib/common`에 DTO, Enum, Schema, Guard 집중화로 코드 중복 감소 및 유지보수성 향상.
 
-### 4. 로깅 및 예외 처리
+### 로깅 및 예외 처리
 - Gateway에 `LoggingInterceptor`, `AllExceptionsFilter`, `CustomLogger` 글로벌 등록.
 ```ts
 // main.ts
@@ -334,14 +343,15 @@ app.useGlobalFilters(app.get(AllExceptionsFilter));
 app.useLogger(app.get(CustomLogger));
 ```
 
-### 5. 헬스 체크
+### 헬스 체크
 - Gateway에서 Auth, Event, MongoDB, Redis, RabbitMQ 주기적 점검.
+- MSA환경에서 특정 서버 혹은 db 마비 시 빠른 확인 가능
 ```ts
 const authRes = await axios.get(`${authUrl}/health`);
 const redisHealthy = await this.redisClient.ping();
 ```
 
-### 6. DTO 유효성 검증
+### DTO 유효성 검증
 - DTO로 요청 데이터 검증, 잘못된 요청은 `BadRequest` 예외 처리.
 ```ts
 export class RegisterDto {
@@ -353,7 +363,7 @@ export class RegisterDto {
 }
 ```
 
-### 7. 출석 체크 처리
+### 출석 체크 처리
 - RabbitMQ와 Redis 기반, `RewardGrantService`로 보상 지급 로직 분리.
 ```ts
 await this.rewardGrantService.tryGrantReward({
