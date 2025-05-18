@@ -25,13 +25,13 @@
 ### ✅ Health
 - `GET /health`: 서버, DB, RabbitMQ, Redis 상태 점검.
 
-### 🗓️ Event (운영자/유저 공용)
-- `POST /event`: 이벤트 생성(운영자).
+### 🗓️ Event (OPERATOR, USER, AUDITOR, ADMIN 허용 역할 분리)
+- `POST /event`: 이벤트 생성(OPERATOR).
 - `GET /event`: 이벤트 목록 조회(공용).
-- `POST /event/{eventId}/rewards`: 보상 등록(운영자).
-- `POST /event/{eventId}/request`: 보상 요청(유저).
-- `GET /event/requests`: 전체 요청 이력 조회(감사자/관리자).
-- `GET /event/requests/me`: 내 요청 이력 조회(유저).
+- `POST /event/{eventId}/rewards`: 보상 등록(OPERATOR).
+- `POST /event/{eventId}/request`: 보상 요청(USER).
+- `GET /event/requests`: 전체 요청 이력 조회(AUDITOR/ADMIN).
+- `GET /event/requests/me`: 내 요청 이력 조회(USER).
 
 ## 설계 의도 및 구조 선택 이유
 ### 1. 이벤트 설계
