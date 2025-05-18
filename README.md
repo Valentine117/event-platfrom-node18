@@ -4,12 +4,13 @@
 이 **이벤트/보상 플랫폼**은 유저의 특정 행동(예: 출석, 로그인 횟수)을 자동으로 감지하여 보상을 지급하는 시스템입니다. NestJS, MongoDB, Redis, RabbitMQ로 구성되며, `docker-compose up --build` 명령어로 쉽게 실행할 수 있습니다.
 
 ## 기술 스택
-- **NestJS Monorepo (MSA)**: Gateway, Auth, Event 서비스가 독립된 모듈로 동작하는 마이크로서비스 아키텍처(MSA)를 채택했습니다. Monorepo는 `@lib/common` 공용 도메인을 통해 타입, DTO, 스키마를 일관되게 관리하여 코드 중복을 최소화합니다.
+- **NestJS Monorepo + MSA 구조**: Monorepo 구조 내에 Gateway, Auth, Event 서버가 각각 독립적으로 구성되어 **명확한 서비스 책임 분리(MSA 구조)**를 실현.
 - **MongoDB**: 이벤트, 보상, 요청 데이터를 저장.
-- **Redis**: TTL 기반 출석 체크 및 로그인 횟수 관리.
-- **RabbitMQ**: 비동기 이벤트 처리(예: 로그인 이벤트).
+- **Redis**: TTL 기반 출석 체크 및 로그인 횟수 관리. MongoDB 접근을 줄이고 이벤트 조건 검증을 빠르게 처리하기 위한 고속 캐시 레이어로 사용.
+- **RabbitMQ**: 로그인 처리와 보상 지급을 분리함으로써 성능 최적화 + 서비스 독립성 확보.
 - **Swagger**: API 문서 자동 생성.
-- **HTTPS + 고정 IP**: Gateway는 인증서를 통해 HTTPS를 지원하며, 고정 IP로 화이트리스트 통신을 구현.
+- **HTTPS + 화이트리스 IP**: Gateway는 인증서를 통해 HTTPS를 지원하며, 고정 IP로 화이트리스트 통신을 구현.
+- **Docker**: docker-compose.yml로 Gateway, Auth, Event, MongoDB, Redis, RabbitMQ를 한 줄 명령어로 실행 가능.
 
 ## 서버 아키텍처 (잠시 대기하면 사진이 로딩됩니다.)
 ![스크린샷 2025-05-18 오후 6 01 59](https://github.com/user-attachments/assets/81938ada-2781-453b-99b8-fa818a6dad79)
@@ -316,6 +317,8 @@ curl -k 'https://localhost:3000/event/requests/me' \
 
 ## 구현 중 고민과 선택
 ### JWT + 역할 기반(Role-Based) 접근 제어
+- 사용자 인증은 JWT 기반으로 수행되며, 사용자 역할(USER, OPERATOR, AUDITOR, ADMIN)에 따라 API 접근 권한이 다르게 설정됩니다.
+- NestJS의 @Roles() 데코레이터와 RolesGuard, JwtAuthGuard를 조합하여 역할 기반 접근 제어를 구현했습니다.
 ```ts
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles('ADMIN')
@@ -327,12 +330,20 @@ getAllRequests() {
 
 ### 출석 보상 중복 방지
 - Redis TTL(86400초)로 출석 보상 중복 지급 방지.
+- attendance:{userId}:{yyyy-mm-dd} 키를 기준으로 중복 요청 방지.
+
+### Redis 및 MQ(RabbitMQ) 사용 이유
+- MongoDB 부하를 줄이기 위해, 실시간 조건 검증 및 중복 체크는 Redis에서 수행.
+- RabbitMQ는 유저 로그인 이벤트를 비동기로 전송하여 Gateway의 응답 속도를 빠르게 유지하고, Event 서버에서 비동기적으로 보상 지급 로직을 처리.
+- 이를 통해 MongoDB는 핵심 데이터 저장소로서의 역할에 집중할 수 있고, 고빈도 요청이 Redis/MQ에서 분산 처리되어 전체 시스템의 확장성과 안정성을 확보함.
 
 ### RabbitMQ 안정성
 - 메시지 발행 실패가 로그인 실패로 이어지지 않도록 `fire-and-forget` 방식 채택.
+- 로그인은 성공시키고, MQ 에러는 로그로만 처리.
 
 ### 공용 라이브러리
 - `@lib/common`에 DTO, Enum, Schema, Guard 집중화로 코드 중복 감소 및 유지보수성 향상.
+- 모든 서비스가 단일 소스에서 타입 정보를 가져가므로 유지보수성과 안정성 증가.
 
 ### 로깅 및 예외 처리
 - Gateway에 `LoggingInterceptor`, `AllExceptionsFilter`, `CustomLogger` 글로벌 등록.
@@ -345,14 +356,15 @@ app.useLogger(app.get(CustomLogger));
 
 ### 헬스 체크
 - Gateway에서 Auth, Event, MongoDB, Redis, RabbitMQ 주기적 점검.
-- MSA환경에서 특정 서버 혹은 db 마비 시 빠른 확인 가능
+- MSA 환경에서 어느 서비스가 죽었는지 빠르게 파악 가능.
 ```ts
 const authRes = await axios.get(`${authUrl}/health`);
 const redisHealthy = await this.redisClient.ping();
 ```
 
 ### DTO 유효성 검증
-- DTO로 요청 데이터 검증, 잘못된 요청은 `BadRequest` 예외 처리.
+- class-validator와 class-transformer를 활용하여 입력값을 DTO 수준에서 검증.
+- 유효하지 않은 요청은 자동으로 400 BadRequest로 처리.
 ```ts
 export class RegisterDto {
   @IsEmail()
@@ -364,7 +376,8 @@ export class RegisterDto {
 ```
 
 ### 출석 체크 처리
-- RabbitMQ와 Redis 기반, `RewardGrantService`로 보상 지급 로직 분리.
+- 로그인 시 MQ 이벤트를 수신한 Event 서버가 Redis를 통해 조건을 확인하고, 보상 지급 여부를 판단.
+- 보상 지급 로직은 RewardGrantService로 분리하여 테스트 및 확장성 확보.
 ```ts
 await this.rewardGrantService.tryGrantReward({
   userId,
@@ -373,8 +386,9 @@ await this.rewardGrantService.tryGrantReward({
 });
 ```
 
-### 8. 화이트리스트 및 보안
-- Gateway 고정 IP(`172.19.0.100`)로 화이트리스트 통신 설정.
+### 화이트리스트 및 보안
+- Gateway는 Docker 네트워크 내 고정 IP(172.19.0.100)를 사용하여 내부 통신만 허용.
+- Auth 서버 등은 IpWhitelistMiddleware로 외부 요청 차단.
 ```yaml
 # docker-compose.yml
 networks:
@@ -402,11 +416,12 @@ export class AuthModule implements NestModule {
 }
 ```
 
-### 9. HTTPS
-- Gateway는 `ssl/` 디렉토리의 로컬 인증서로 TLS 환경 구성.
+### HTTPS
+- Gateway는 로컬 개발 환경에서도 TLS 통신이 가능하도록 ssl/ 디렉토리에 인증서를 마운트하여 HTTPS 지원.
 
-### 10. 초기 데이터
-- `mongo-init.js`로 초기 이벤트/보상 데이터 자동 등록.
+### 초기 데이터
+- mongo-init.js를 통해 docker-compose up --build 시 자동으로 이벤트 및 보상 데이터를 등록.
+- 테스트 준비 시간을 줄이고 일관된 환경 보장.
 ```js
 // mongo-init.js
 db = db.getSiblingDB('event-reward-platform-dev');
@@ -457,12 +472,29 @@ db.rewards.insertOne({
 });
 ```
 
+---
+
 ## 향후 확장 가능성
-- 스키마 기반 DDD 및 Repository 패턴 도입.
-- 포인트 차감 로직 및 분산 락 구현.
-- 다양한 조건 추가(예: 페이지 클릭, 구매 금액 초과).
-- 쿠폰 발급/사용 로직 추가.
-- 관리자 대시보드 연동.
+### 스키마 기반 DDD 및 Repository 패턴 도입.
+- 현재는 Mongoose 모델에 직접 접근하지만, 도메인과 인프라의 분리를 통해 RewardRequest 등 핵심 도메인에 대한 비즈니스 로직을 더욱 명확히 할 수 있음.
+- Service → Repository → Model 구조로 책임 분리
+
+### 포인트 차감 로직 및 분산 락 구현.
+- 현재는 단순 보상 지급 위주의 구조이지만, 포인트 사용/차감 기능이 추가될 경우 반드시 Race Condition과 중복 지급/차감 문제가 발생할 수 있음.
+- Redis 기반의 분산 락(Lua + setnx) 또는 Redlock 알고리즘을 적용하여 멀티 인스턴스 환경에서도 정확한 처리 가능
+
+### 이벤트 스케줄러 연동 및 예약 시스템.
+- cron 기반의 예약 이벤트 또는 특정 시간대 자동 실행 로직 추가 가능
+- 인프라 단계로 고도화 시 스케줄러 로직 API화 후 AWS EventBridge + Lambda를 통하여 관 
+
+###쿠폰 발급/사용 로직 추가.
+- 포인트 외에 쿠폰/아이템 보상 타입도 확장 가능 (이미 Reward.type으로 COUPON, ITEM 타입 지원).
+- 쿠폰은 UUID 기반으로 생성 + 유저별 매핑 후 사용 여부 추적 필요
+
+### 관리자 대시보드 연동.
+- 운영자가 생성한 이벤트 및 지급 내역을 관리할 수 있는 웹 UI 기반 Admin Dashboard 추가 가능
+- 보상 내역 필터링 (날짜/유저/이벤트 코드별)
+- 지급률 분석, Redis TTL 현황, MQ 상태 실시간 모니터링
 
 ---
 
