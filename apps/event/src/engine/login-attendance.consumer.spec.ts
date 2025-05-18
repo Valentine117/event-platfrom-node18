@@ -39,7 +39,7 @@ describe('LoginAttendanceConsumer', () => {
     jest.clearAllMocks();
   });
 
-  it('✅ 첫 로그인 시 출석 보상을 지급한다', async () => {
+  it('첫 로그인 시 출석 보상을 지급한다', async () => {
     mockRedisClient.get.mockResolvedValue(null); // 출석 여부 없음
     mockRedisClient.incr.mockResolvedValue(1); // 로그인 카운트 증가
 
@@ -57,7 +57,7 @@ describe('LoginAttendanceConsumer', () => {
     });
   });
 
-  it('🚫 이미 출석한 경우에는 출석 보상을 지급하지 않는다', async () => {
+  it('이미 출석한 경우에는 출석 보상을 지급하지 않는다', async () => {
     mockRedisClient.get.mockResolvedValue('1'); // 이미 출석함
     mockRedisClient.incr.mockResolvedValue(2);
 
@@ -70,7 +70,7 @@ describe('LoginAttendanceConsumer', () => {
     });
   });
 
-  it('🥚 로그인 5회째에는 이스터에그 보상을 지급한다', async () => {
+  it('로그인 5회째에는 이스터에그 보상을 지급한다', async () => {
     mockRedisClient.get.mockResolvedValue('1'); // 이미 출석 처리됨
     mockRedisClient.incr.mockResolvedValue(5); // 5회 로그인 도달
 
@@ -83,7 +83,7 @@ describe('LoginAttendanceConsumer', () => {
     });
   });
 
-  it('🔁 로그인 5회 이전에는 이스터에그 보상을 지급하지 않는다', async () => {
+  it('로그인 5회 이전에는 이스터에그 보상을 지급하지 않는다', async () => {
     mockRedisClient.get.mockResolvedValue('1'); // 이미 출석 처리됨
     mockRedisClient.incr.mockResolvedValue(3); // 아직 5회 미만
 

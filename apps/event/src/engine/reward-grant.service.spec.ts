@@ -8,6 +8,7 @@ import {
   RewardRequestStatus,
 } from '@lib/common';
 
+// 🧪 가짜 Mongoose 모델 정의 (테스트 전용)
 const mockRewardEventModel = {
   findOne: jest.fn(),
 };
@@ -46,7 +47,7 @@ describe('RewardGrantService', () => {
     service = module.get<RewardGrantService>(RewardGrantService);
   });
 
-  it('should return null if event not found', async () => {
+  it('이벤트가 존재하지 않으면 null을 반환해야 한다', async () => {
     mockRewardEventModel.findOne.mockResolvedValue(null);
 
     const result = await service.tryGrantReward({
@@ -55,10 +56,10 @@ describe('RewardGrantService', () => {
       date: '2025-05-18',
     });
 
-    expect(result).toBeNull();
+    expect(result).toBeNull(); // 이벤트 없음
   });
 
-  it('should return null if reward not found', async () => {
+  it('보상이 존재하지 않으면 null을 반환해야 한다', async () => {
     mockRewardEventModel.findOne.mockResolvedValue({ _id: 'e1' });
     mockRewardModel.findOne.mockResolvedValue(null);
 
@@ -68,10 +69,10 @@ describe('RewardGrantService', () => {
       date: '2025-05-18',
     });
 
-    expect(result).toBeNull();
+    expect(result).toBeNull(); // 보상 없음
   });
 
-  it('should return null if already given', async () => {
+  it('이미 보상을 지급한 경우 null을 반환해야 한다', async () => {
     mockRewardEventModel.findOne.mockResolvedValue({ _id: 'e1' });
     mockRewardModel.findOne.mockResolvedValue({ _id: 'r1' });
     mockRewardRequestModel.exists.mockResolvedValue(true);
@@ -82,11 +83,12 @@ describe('RewardGrantService', () => {
       date: '2025-05-18',
     });
 
-    expect(result).toBeNull();
+    expect(result).toBeNull(); // 중복 보상 방지
   });
 
-  it('should create and return reward request if all conditions met', async () => {
+  it('조건을 모두 만족하면 보상 요청을 생성하고 반환해야 한다', async () => {
     const mockRewardRequest = { _id: 'rr1' };
+
     mockRewardEventModel.findOne.mockResolvedValue({ _id: 'e1' });
     mockRewardModel.findOne.mockResolvedValue({ _id: 'r1' });
     mockRewardRequestModel.exists.mockResolvedValue(false);
@@ -98,7 +100,7 @@ describe('RewardGrantService', () => {
       date: '2025-05-18',
     });
 
-    expect(result).toEqual(mockRewardRequest);
+    expect(result).toEqual(mockRewardRequest); // 정상 보상 지급
     expect(mockRewardRequestModel.create).toBeCalledWith({
       userId: 'user1',
       eventId: 'e1',
