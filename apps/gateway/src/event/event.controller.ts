@@ -87,9 +87,9 @@ export class EventController {
   }
 
   @Get('requests')
-  @Roles('ADMIN', 'AUDITOR')
+  @Roles('AUDITOR')
   @ApiOperation({
-    summary: '전체 보상 요청 조회 (AUDITOR/ADMIN 전용)',
+    summary: '전체 보상 요청 조회 (AUDITOR 전용)',
     description: '모든 보상 요청 이력을 조회합니다.',
   })
   getAllRequests(@Req() req) {
