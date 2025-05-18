@@ -27,7 +27,7 @@
 - `GET /health`: 서버, DB, RabbitMQ, Redis 상태 점검.
 
 ### 🗓️ Event (OPERATOR, USER, AUDITOR, ADMIN 허용 역할 분리)
--**ADMIN** 계정은 모든 API 요청 권한을 가지고 있습니다.
+- **ADMIN** 계정은 모든 API 요청 권한을 가지고 있습니다.
 - `POST /event`: 이벤트 생성(OPERATOR).
 - `GET /event`: 이벤트 목록 조회(공용).
 - `POST /event/{eventId}/rewards`: 보상 등록(OPERATOR).
