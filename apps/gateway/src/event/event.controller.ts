@@ -28,7 +28,7 @@ export class EventController {
   @Post()
   @Roles('OPERATOR')
   @ApiOperation({
-    summary: '이벤트 생성',
+    summary: '이벤트 등록 (OPERATOR 전용)',
     description: '운영자가 이벤트를 생성합니다.',
   })
   createEvent(@Body() dto: CreateEventDto, @Req() req) {
@@ -41,7 +41,7 @@ export class EventController {
 
   @Get()
   @ApiOperation({
-    summary: '이벤트 목록 조회',
+    summary: '이벤트 목록 조회 (누구나)',
     description: '모든 이벤트를 조회합니다.',
   })
   getEvents(@Req() req) {
@@ -51,8 +51,9 @@ export class EventController {
   @Post(':eventId/rewards')
   @Roles('OPERATOR')
   @ApiOperation({
-    summary: '보상 등록',
-    description: '특정 이벤트에 보상을 등록합니다.',
+    summary: '보상 등록 (OPERATOR 전용)',
+    description:
+      '특정 이벤트에 보상을 등록합니다. EVENT_ID=<이벤트 ObjectId 수동 입력>',
   })
   createReward(
     @Param('eventId') eventId: string,
@@ -69,8 +70,9 @@ export class EventController {
   @Post(':eventId/request')
   @Roles('USER')
   @ApiOperation({
-    summary: '보상 요청',
-    description: '유저가 이벤트 보상을 요청합니다.',
+    summary: '보상 요청 (USER 전용)',
+    description:
+      '유저가 이벤트 보상을 요청합니다. EVENT_ID=<이벤트 ObjectId>, rewardId =<보상 ObjectId>',
   })
   requestReward(
     @Param('eventId') eventId: string,
@@ -87,7 +89,7 @@ export class EventController {
   @Get('requests')
   @Roles('ADMIN', 'AUDITOR')
   @ApiOperation({
-    summary: '전체 요청 이력 조회',
+    summary: '전체 보상 요청 조회 (AUDITOR/ADMIN 전용)',
     description: '모든 보상 요청 이력을 조회합니다.',
   })
   getAllRequests(@Req() req) {
@@ -100,7 +102,7 @@ export class EventController {
   @Get('requests/me')
   @Roles('USER')
   @ApiOperation({
-    summary: '내 요청 이력 조회',
+    summary: '나의 보상 요청 조회 (USER 전용)',
     description: '현재 로그인한 유저의 보상 요청 이력을 조회합니다.',
   })
   getMyRequests(@Req() req) {

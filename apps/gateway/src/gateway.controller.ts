@@ -11,7 +11,8 @@ export class GatewayController {
   @Post('auth/register')
   @ApiOperation({
     summary: '회원가입',
-    description: '새로운 사용자를 등록합니다.',
+    description:
+      '새로운 사용자를 등록합니다. role: USER | OPERATOR | AUDITOR | ADMIN 중 선택',
   })
   register(@Body() dto: RegisterDto) {
     return this.gatewayService.forwardRegister(dto);
