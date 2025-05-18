@@ -41,7 +41,7 @@ export class EventService {
 
   async getEvents() {
     try {
-      return await this.eventModel.find().exec();
+      return await this.eventModel.find().populate('rewards').exec();
     } catch {
       throw new InternalServerErrorException(
         '이벤트 목록 조회 중 오류가 발생했습니다.',

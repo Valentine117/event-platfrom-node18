@@ -1,6 +1,11 @@
 import { HttpService } from '@nestjs/axios';
 import { HttpException, Injectable } from '@nestjs/common';
-import { RegisterDto, LoginDto, LoginEventPublisher } from '@lib/common';
+import {
+  RegisterDto,
+  LoginDto,
+  LoginEventPublisher,
+  UserRole,
+} from '@lib/common';
 import { lastValueFrom } from 'rxjs';
 import { JwtService } from '@nestjs/jwt';
 
@@ -40,7 +45,12 @@ export class GatewayService {
       const decoded = this.jwtService.decode(accessToken) as {
         sub: string;
         email: string;
+        role: string;
       };
+
+      if (decoded?.role !== UserRole.USER) {
+        return response.data; // 다른 역할은 MQ 발행 안 함
+      }
 
       const userId = decoded?.sub;
       if (userId) {
