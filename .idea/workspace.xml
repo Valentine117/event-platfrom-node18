@@ -4,10 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="5d0c633c-d7db-4d1d-a194-ab4333374761" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/apps/gateway/src/event/event.controller.ts" beforeDir="false" afterPath="$PROJECT_DIR$/apps/gateway/src/event/event.controller.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/apps/gateway/src/gateway.controller.ts" beforeDir="false" afterPath="$PROJECT_DIR$/apps/gateway/src/gateway.controller.ts" afterDir="false" />
-    </list>
+    <list default="true" id="5d0c633c-d7db-4d1d-a194-ab4333374761" name="Changes" comment="" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -70,7 +67,7 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1747560597548</updated>
-      <workItem from="1747560598553" duration="1129000" />
+      <workItem from="1747560598553" duration="1463000" />
     </task>
     <servers />
   </component>
