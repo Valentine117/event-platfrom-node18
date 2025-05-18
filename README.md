@@ -11,10 +11,8 @@
 - **Swagger**: API 문서 자동 생성.
 - **HTTPS + 고정 IP**: Gateway는 인증서를 통해 HTTPS를 지원하며, 고정 IP로 화이트리스트 통신을 구현.
 
-## 서버 아키텍처
-- **Gateway**: 모든 API 요청의 진입점, 인증, 권한 검사, 라우팅.
-- **Auth**: 유저 관리, 로그인, 역할 관리, JWT 발급.
-- **Event**: 이벤트 생성, 보상 정의, 요청 처리, 지급 상태 저장.
+## 서버 아키텍처 (잠시 대기하면 사진이 로딩됩니다.)
+![스크린샷 2025-05-18 오후 6 01 59](https://github.com/user-attachments/assets/81938ada-2781-453b-99b8-fa818a6dad79)
 
 ## Swagger 경로
 - `https://localhost:3000/apis`: Gateway의 API 문서.
