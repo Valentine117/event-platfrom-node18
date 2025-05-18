@@ -424,11 +424,17 @@ curl -k 'https://localhost:3000/event/requests/me' \
 - 사용자 인증은 JWT 기반으로 수행되며, 사용자 역할(USER, OPERATOR, AUDITOR, ADMIN)에 따라 API 접근 권한이 다르게 설정됩니다.
 - NestJS의 @Roles() 데코레이터와 RolesGuard, JwtAuthGuard를 조합하여 역할 기반 접근 제어를 구현했습니다.
 ```ts
-@UseGuards(JwtAuthGuard, RolesGuard)
-@Roles('ADMIN')
-@Get('/event/requests')
-getAllRequests() {
-  return this.eventService.getAllRequests();
+@Get('requests')
+@Roles('AUDITOR')
+@ApiOperation({
+  summary: '전체 보상 요청 조회 (AUDITOR 전용)',
+  description: '모든 보상 요청 이력을 조회합니다.',
+})
+getAllRequests(@Req() req) {
+  return this.eventService.proxyGet(
+    '/event/requests',
+    req?.headers?.authorization,
+  );
 }
 ```
 
