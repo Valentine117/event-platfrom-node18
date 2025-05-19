@@ -6,10 +6,12 @@ import {
   Param,
   UseGuards,
   Req,
+  Patch,
 } from '@nestjs/common';
 import { EventService } from './event.service';
 import { CreateEventDto, CreateRewardDto, RequestRewardDto } from '@lib/common';
 import { JwtAuthGuard, Roles, RolesGuard } from '@lib/common';
+import { UpdateEventDto } from '@lib/common/dtos/event/update-event.dto';
 
 @Controller('event')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -25,6 +27,12 @@ export class EventController {
   @Get()
   getEvents() {
     return this.eventService.getEvents();
+  }
+
+  @Patch(':eventId')
+  @Roles('OPERATOR')
+  updateEvent(@Param('eventId') eventId: string, @Body() dto: UpdateEventDto) {
+    return this.eventService.updateEvent(eventId, dto);
   }
 
   @Post(':eventId/rewards')

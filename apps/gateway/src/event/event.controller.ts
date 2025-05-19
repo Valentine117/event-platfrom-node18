@@ -6,6 +6,7 @@ import {
   Param,
   UseGuards,
   Req,
+  Patch,
 } from '@nestjs/common';
 import { EventService } from './event.service';
 import {
@@ -15,6 +16,7 @@ import {
   RequestRewardDto,
   Roles,
   RolesGuard,
+  UpdateEventDto,
 } from '@lib/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 
@@ -65,6 +67,25 @@ export class EventController {
   })
   getEvents(@Req() req) {
     return this.eventService.proxyGet('/event', req?.headers?.authorization);
+  }
+
+  @Patch(':eventId')
+  @Roles('OPERATOR')
+  @ApiOperation({
+    summary: '이벤트 수정 (OPERATOR 전용)',
+    description:
+      '이벤트 이름, 설명, 시작일, 종료일, 상태를 수정할 수 있습니다.',
+  })
+  updateEvent(
+    @Param('eventId') eventId: string,
+    @Body() dto: UpdateEventDto,
+    @Req() req,
+  ) {
+    return this.eventService.proxyPatch(
+      `/event/${eventId}`,
+      dto,
+      req?.headers?.authorization,
+    );
   }
 
   @Post(':eventId/request')

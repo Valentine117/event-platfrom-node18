@@ -47,4 +47,24 @@ export class EventService {
       }
     }
   }
+
+  async proxyPatch(path: string, body: any, authorizationHeader?: any) {
+    const headers = authorizationHeader
+      ? { Authorization: authorizationHeader }
+      : undefined;
+
+    try {
+      const { data } = await axios.patch(`${this.baseUrl}${path}`, body, {
+        headers,
+      });
+      return data;
+    } catch (error) {
+      if (error.response) {
+        throw new HttpException(
+          error?.response?.data || 'Internal Server Error.',
+          error?.response?.status || 500,
+        );
+      }
+    }
+  }
 }

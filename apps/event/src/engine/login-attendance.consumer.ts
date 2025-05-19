@@ -8,7 +8,7 @@ import { RewardGrantService } from './reward-grant.service';
 export class LoginAttendanceConsumer {
   constructor(
     @Inject('REDIS_CLIENT') private redisClient: RedisClientType,
-    private readonly rewardGrantService: RewardGrantService, // ⬅️ DI 주입
+    private readonly rewardGrantService: RewardGrantService,
   ) {}
 
   @EventPattern('user.logged_in')
@@ -22,16 +22,16 @@ export class LoginAttendanceConsumer {
 
     if (!alreadyAttended) {
       await this.redisClient.set(attendanceKey, '1', { EX: 86400 });
-      console.log(`✅ 출석 처리 완료: ${attendanceKey}`);
+      console.log(`출석 처리 완료: ${attendanceKey}`);
 
-      // ⬇️ 보상 지급 (ATT_101)
+      // 보상 지급 (ATT_101)
       await this.rewardGrantService.tryGrantReward({
         userId,
         eventCode: RewardEventCode.DAILY_ATTENDANCE,
         date: today,
       });
     } else {
-      console.log(`⚠️ 이미 출석 처리됨: ${attendanceKey}`);
+      console.log(`이미 출석 처리됨: ${attendanceKey}`);
     }
 
     // 로그인 횟수 증가

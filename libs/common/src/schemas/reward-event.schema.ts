@@ -1,12 +1,8 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
+import { EventStatus } from '@lib/common/enums/event-status.enum';
 
 export type RewardEventDocument = RewardEvent & Document;
-
-export enum EventStatus {
-  ACTIVE = 'ACTIVE',
-  INACTIVE = 'INACTIVE',
-}
 
 @Schema({ timestamps: true })
 export class RewardEvent {
@@ -16,7 +12,12 @@ export class RewardEvent {
   @Prop()
   description: string;
 
-  @Prop({ required: true, enum: EventStatus, default: EventStatus.INACTIVE })
+  @Prop({
+    required: true,
+    type: String,
+    enum: EventStatus,
+    default: EventStatus.INACTIVE,
+  })
   status: EventStatus;
 
   @Prop({ required: true })

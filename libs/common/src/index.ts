@@ -4,6 +4,7 @@ export * from './dtos/auth/login.dto';
 export * from '@lib/common/dtos/event/create-event.dto';
 export * from '@lib/common/dtos/event/create-reward.dto';
 export * from '@lib/common/dtos/event/request-reward.dto';
+export * from '@lib/common/dtos/event/update-event.dto';
 
 // schemas
 export * from './schemas/user.schema';
@@ -24,3 +25,4 @@ export * from '@lib/common/config/login-event.publisher';
 
 //enum
 export * from '@lib/common/enums/event-code.enum';
+export * from '@lib/common/enums/event-status.enum';

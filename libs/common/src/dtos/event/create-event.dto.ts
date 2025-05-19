@@ -4,8 +4,10 @@ import {
   IsObject,
   IsOptional,
   IsString,
+  IsEnum,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { EventStatus } from '@lib/common/enums/event-status.enum';
 
 export class CreateEventDto {
   @ApiProperty({ example: '테스트 이벤트', description: '이벤트 이름' })
@@ -35,4 +37,8 @@ export class CreateEventDto {
   @IsObject()
   @IsNotEmpty()
   conditions: Record<string, any>;
+
+  @ApiProperty({ enum: EventStatus, default: EventStatus.ACTIVE })
+  @IsEnum(EventStatus)
+  status: EventStatus;
 }

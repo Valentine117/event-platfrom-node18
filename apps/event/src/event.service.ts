@@ -15,6 +15,8 @@ import {
   CreateEventDto,
   CreateRewardDto,
   RequestRewardDto,
+  UpdateEventDto,
+  RewardRequestStatus,
 } from '@lib/common';
 import { Model, Types } from 'mongoose';
 
@@ -49,6 +51,37 @@ export class EventService {
     }
   }
 
+  async updateEvent(eventId: string, dto: UpdateEventDto) {
+    try {
+      const updated = await this.eventModel.findByIdAndUpdate(
+        eventId,
+        { $set: dto },
+        { new: true, runValidators: true },
+      );
+
+      if (!updated) {
+        throw new NotFoundException('해당 이벤트를 찾을 수 없습니다.');
+      }
+
+      return updated;
+    } catch (error) {
+      // 잘못된 ObjectId 포맷
+      if (error.name === 'CastError') {
+        throw new NotFoundException('이벤트 ID 형식이 올바르지 않습니다.');
+      }
+
+      // 유효성 검사 실패 (예: DTO 제약 조건 위반)
+      if (error.name === 'ValidationError') {
+        throw new ConflictException('이벤트 수정값이 유효하지 않습니다.');
+      }
+
+      // 기타 예외
+      throw new InternalServerErrorException(
+        '이벤트 수정 중 서버 오류가 발생했습니다.',
+      );
+    }
+  }
+
   async createReward(eventId: string, dto: CreateRewardDto) {
     const event = await this.eventModel.findById(eventId);
     if (!event) throw new NotFoundException('이벤트를 찾을 수 없습니다.');
@@ -66,26 +99,43 @@ export class EventService {
   }
 
   async requestReward(eventId: string, userId: string, dto: RequestRewardDto) {
-    const exists = await this.requestModel.findOne({ eventId, userId });
-    if (exists) {
-      throw new ConflictException('이미 요청한 이벤트입니다.');
+    const rewardEvent = await this.eventModel.findById(eventId);
+    if (!rewardEvent) {
+      throw new NotFoundException('이벤트를 찾을 수 없습니다.');
     }
 
     const reward = await this.rewardModel.findOne({
       _id: dto.rewardId,
       eventId: new Types.ObjectId(eventId),
     });
-    if (!reward) throw new NotFoundException('해당 보상을 찾을 수 없습니다.');
+    if (!reward) {
+      throw new NotFoundException('해당 보상을 찾을 수 없습니다.');
+    }
 
-    const req = new this.requestModel({
+    const now = new Date();
+    const isInPeriod =
+      now >= rewardEvent.startDate && now <= rewardEvent.endDate;
+    const isActive = rewardEvent.status === 'ACTIVE';
+
+    const alreadyRequested = await this.requestModel.findOne({
+      eventId,
+      userId,
+    });
+
+    const status =
+      alreadyRequested || !isInPeriod || !isActive
+        ? RewardRequestStatus.FAILED
+        : RewardRequestStatus.SUCCESS;
+
+    const request = new this.requestModel({
       eventId,
       userId,
       rewardId: dto.rewardId,
-      status: 'SUCCESS',
+      status,
     });
 
     try {
-      return await req.save();
+      return await request.save();
     } catch {
       throw new InternalServerErrorException(
         '보상 요청 저장 중 오류가 발생했습니다.',
