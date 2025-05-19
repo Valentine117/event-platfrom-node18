@@ -1,6 +1,6 @@
 {
 	"info": {
-		"_postman_id": "d074e24f-495d-4bee-96a5-670b483e4fe5",
+		"_postman_id": "a567f292-9972-41a3-a7ac-7d97c09fffb2",
 		"name": "EVENT_PLATFORM_NODE18",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
 		"_exporter_id": "37863420"
@@ -407,6 +407,45 @@
 					"response": []
 				},
 				{
+					"name": "이벤트 수정 (OPERATOR) 전용",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "accept",
+								"value": "*/*"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"변경된 이벤트 이름\",\n  \"description\": \"변경된 설명\",\n  \"startDate\": \"2025-05-02T00:00:00.000Z\",\n  \"endDate\": \"2025-07-01T00:00:00.000Z\",\n  \"status\": \"ACTIVE\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "https://localhost:3000/event/%24EVENT_ID",
+							"protocol": "https",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"event",
+								"%24EVENT_ID"
+							]
+						},
+						"description": "Generated from cURL: curl -X 'PATCH' \\\n  'https://localhost:3000/event/%24EVENT_ID' \\\n  -H 'accept: */*' \\\n  -H 'Content-Type: application/json' \\\n  -d '{\n  \"name\": \"변경된 이벤트 이름\",\n  \"description\": \"변경된 설명\",\n  \"startDate\": \"2025-05-02T00:00:00.000Z\",\n  \"endDate\": \"2025-07-01T00:00:00.000Z\",\n  \"status\": \"ACTIVE\"\n}'"
+					},
+					"response": []
+				},
+				{
 					"name": "보상 등록 (OPERATOR 전용) EVENT_ID=<이벤트 ObjectId 수동 입력>",
 					"request": {
 						"auth": {
@@ -580,45 +619,6 @@
 					"response": []
 				}
 			]
-		},
-		{
-			"name": "이벤트 수정 (OPERATOR) 전용",
-			"request": {
-				"method": "PATCH",
-				"header": [
-					{
-						"key": "accept",
-						"value": "*/*"
-					},
-					{
-						"key": "Content-Type",
-						"value": "application/json"
-					}
-				],
-				"body": {
-					"mode": "raw",
-					"raw": "{\n  \"name\": \"변경된 이벤트 이름\",\n  \"description\": \"변경된 설명\",\n  \"startDate\": \"2025-05-02T00:00:00.000Z\",\n  \"endDate\": \"2025-07-01T00:00:00.000Z\",\n  \"status\": \"ACTIVE\"\n}",
-					"options": {
-						"raw": {
-							"language": "json"
-						}
-					}
-				},
-				"url": {
-					"raw": "https://localhost:3000/event/%24EVENT_ID",
-					"protocol": "https",
-					"host": [
-						"localhost"
-					],
-					"port": "3000",
-					"path": [
-						"event",
-						"%24EVENT_ID"
-					]
-				},
-				"description": "Generated from cURL: curl -X 'PATCH' \\\n  'https://localhost:3000/event/%24EVENT_ID' \\\n  -H 'accept: */*' \\\n  -H 'Content-Type: application/json' \\\n  -d '{\n  \"name\": \"변경된 이벤트 이름\",\n  \"description\": \"변경된 설명\",\n  \"startDate\": \"2025-05-02T00:00:00.000Z\",\n  \"endDate\": \"2025-07-01T00:00:00.000Z\",\n  \"status\": \"ACTIVE\"\n}'"
-			},
-			"response": []
 		}
 	]
 }
