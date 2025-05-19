@@ -20,7 +20,7 @@ export class Reward {
   @Prop({ required: true })
   quantity: number;
 
-  @Prop({ type: Types.ObjectId, ref: 'Event', required: true })
+  @Prop({ type: Types.ObjectId, ref: 'RewardEvent', required: true })
   eventId: Types.ObjectId;
 }
 

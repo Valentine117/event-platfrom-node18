@@ -18,7 +18,7 @@ import {
 } from '@lib/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 
-@ApiTags('Event')
+@ApiTags('Event (ADMIN 계정은 모든 기능에 대한 접근 권한을 가집니다.)')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('event')
@@ -39,15 +39,6 @@ export class EventController {
     );
   }
 
-  @Get()
-  @ApiOperation({
-    summary: '이벤트 목록 조회 (누구나)',
-    description: '모든 이벤트를 조회합니다.',
-  })
-  getEvents(@Req() req) {
-    return this.eventService.proxyGet('/event', req?.headers?.authorization);
-  }
-
   @Post(':eventId/rewards')
   @Roles('OPERATOR')
   @ApiOperation({
@@ -65,6 +56,15 @@ export class EventController {
       dto,
       req?.headers?.authorization,
     );
+  }
+
+  @Get()
+  @ApiOperation({
+    summary: '이벤트 목록 + 보상 조회 (누구나)',
+    description: '모든 이벤트를 조회합니다.',
+  })
+  getEvents(@Req() req) {
+    return this.eventService.proxyGet('/event', req?.headers?.authorization);
   }
 
   @Post(':eventId/request')

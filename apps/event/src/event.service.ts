@@ -16,7 +16,7 @@ import {
   CreateRewardDto,
   RequestRewardDto,
 } from '@lib/common';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 
 @Injectable()
 export class EventService {
@@ -54,7 +54,10 @@ export class EventService {
     if (!event) throw new NotFoundException('이벤트를 찾을 수 없습니다.');
 
     try {
-      return await this.rewardModel.create({ ...dto, eventId });
+      return await this.rewardModel.create({
+        ...dto,
+        eventId: new Types.ObjectId(eventId),
+      });
     } catch {
       throw new InternalServerErrorException(
         '보상 생성 중 오류가 발생했습니다.',
@@ -70,7 +73,7 @@ export class EventService {
 
     const reward = await this.rewardModel.findOne({
       _id: dto.rewardId,
-      eventId,
+      eventId: new Types.ObjectId(eventId),
     });
     if (!reward) throw new NotFoundException('해당 보상을 찾을 수 없습니다.');
 
