@@ -1,4 +1,3 @@
-// login-attendance.consumer.spec.ts
 import { Test, TestingModule } from '@nestjs/testing';
 import { LoginAttendanceConsumer } from './login-attendance.consumer';
 import { RewardGrantService } from './reward-grant.service';
@@ -12,7 +11,7 @@ const mockRedisClient = {
   expire: jest.fn(),
 };
 
-// 보상 지급 서비스 모킹 객체
+// 보상 지급 서비스 모킹
 const mockRewardGrantService = {
   tryGrantReward: jest.fn(),
 };
@@ -39,14 +38,14 @@ describe('LoginAttendanceConsumer', () => {
     jest.clearAllMocks();
   });
 
-  it('첫 로그인 시 출석 보상을 지급한다', async () => {
-    mockRedisClient.get.mockResolvedValue(null); // 출석 여부 없음
-    mockRedisClient.incr.mockResolvedValue(1); // 로그인 카운트 증가
+  it('출석이 처음이면 출석 처리하고 보상 지급', async () => {
+    mockRedisClient.get.mockResolvedValue(null);
+    mockRedisClient.incr.mockResolvedValue(1);
 
     await consumer.handleLoginEvent({ userId: 'user123' });
 
     expect(mockRedisClient.set).toHaveBeenCalledWith(
-      'attendance:user123:' + expect.any(String),
+      expect.stringMatching(/^attendance:user123:/),
       '1',
       { EX: 86400 },
     );
@@ -57,8 +56,8 @@ describe('LoginAttendanceConsumer', () => {
     });
   });
 
-  it('이미 출석한 경우에는 출석 보상을 지급하지 않는다', async () => {
-    mockRedisClient.get.mockResolvedValue('1'); // 이미 출석함
+  it('출석이 이미 되었으면 보상 지급하지 않음', async () => {
+    mockRedisClient.get.mockResolvedValue('1');
     mockRedisClient.incr.mockResolvedValue(2);
 
     await consumer.handleLoginEvent({ userId: 'user123' });
@@ -70,9 +69,9 @@ describe('LoginAttendanceConsumer', () => {
     });
   });
 
-  it('로그인 5회째에는 이스터에그 보상을 지급한다', async () => {
-    mockRedisClient.get.mockResolvedValue('1'); // 이미 출석 처리됨
-    mockRedisClient.incr.mockResolvedValue(5); // 5회 로그인 도달
+  it('5번째 로그인 시 이스터에그 보상 지급', async () => {
+    mockRedisClient.get.mockResolvedValue('1');
+    mockRedisClient.incr.mockResolvedValue(5);
 
     await consumer.handleLoginEvent({ userId: 'user123' });
 
@@ -83,9 +82,9 @@ describe('LoginAttendanceConsumer', () => {
     });
   });
 
-  it('로그인 5회 이전에는 이스터에그 보상을 지급하지 않는다', async () => {
-    mockRedisClient.get.mockResolvedValue('1'); // 이미 출석 처리됨
-    mockRedisClient.incr.mockResolvedValue(3); // 아직 5회 미만
+  it('5회 미만 로그인 시 이스터에그 보상 지급하지 않음', async () => {
+    mockRedisClient.get.mockResolvedValue('1');
+    mockRedisClient.incr.mockResolvedValue(3);
 
     await consumer.handleLoginEvent({ userId: 'user123' });
 

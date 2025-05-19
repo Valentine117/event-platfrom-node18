@@ -7,8 +7,14 @@ import {
   RewardRequest,
   RewardRequestStatus,
 } from '@lib/common';
+import { Types } from 'mongoose';
 
-// 🧪 가짜 Mongoose 모델 정의 (테스트 전용)
+const userId = '507f1f77bcf86cd799439011';
+const eventId = '507f191e810c19729de860ea';
+const rewardId = '507f1f77bcf86cd799439012';
+const rewardRequestId = '507f1f77bcf86cd799439013';
+
+// Mongoose 모델 모킹
 const mockRewardEventModel = {
   findOne: jest.fn(),
 };
@@ -45,68 +51,78 @@ describe('RewardGrantService', () => {
     }).compile();
 
     service = module.get<RewardGrantService>(RewardGrantService);
+    jest.clearAllMocks(); // 각 테스트마다 mock 초기화
   });
 
-  it('이벤트가 존재하지 않으면 null을 반환해야 한다', async () => {
+  it('이벤트가 존재하지 않으면 null 반환', async () => {
     mockRewardEventModel.findOne.mockResolvedValue(null);
 
     const result = await service.tryGrantReward({
-      userId: 'user1',
-      eventCode: 'ATT_999',
-      date: '2025-05-18',
+      userId,
+      eventCode: 'ATT_101',
+      date: '2025-05-20',
     });
 
-    expect(result).toBeNull(); // 이벤트 없음
+    expect(result).toBeNull();
   });
 
-  it('보상이 존재하지 않으면 null을 반환해야 한다', async () => {
-    mockRewardEventModel.findOne.mockResolvedValue({ _id: 'e1' });
+  it('보상이 존재하지 않으면 null 반환', async () => {
+    mockRewardEventModel.findOne.mockResolvedValue({
+      _id: new Types.ObjectId(eventId),
+    });
     mockRewardModel.findOne.mockResolvedValue(null);
 
     const result = await service.tryGrantReward({
-      userId: 'user1',
+      userId,
       eventCode: 'ATT_101',
-      date: '2025-05-18',
+      date: '2025-05-20',
     });
 
-    expect(result).toBeNull(); // 보상 없음
+    expect(result).toBeNull();
   });
 
-  it('이미 보상을 지급한 경우 null을 반환해야 한다', async () => {
-    mockRewardEventModel.findOne.mockResolvedValue({ _id: 'e1' });
-    mockRewardModel.findOne.mockResolvedValue({ _id: 'r1' });
+  it('이미 보상이 지급된 경우 null 반환', async () => {
+    mockRewardEventModel.findOne.mockResolvedValue({
+      _id: new Types.ObjectId(eventId),
+    });
+    mockRewardModel.findOne.mockResolvedValue({
+      _id: new Types.ObjectId(rewardId),
+    });
     mockRewardRequestModel.exists.mockResolvedValue(true);
 
     const result = await service.tryGrantReward({
-      userId: 'user1',
+      userId,
       eventCode: 'ATT_101',
-      date: '2025-05-18',
+      date: '2025-05-20',
     });
 
-    expect(result).toBeNull(); // 중복 보상 방지
+    expect(result).toBeNull();
   });
 
-  it('조건을 모두 만족하면 보상 요청을 생성하고 반환해야 한다', async () => {
-    const mockRewardRequest = { _id: 'rr1' };
+  it('보상이 지급되지 않았을 경우 생성 후 반환', async () => {
+    const mockRewardRequest = { _id: new Types.ObjectId(rewardRequestId) };
 
-    mockRewardEventModel.findOne.mockResolvedValue({ _id: 'e1' });
-    mockRewardModel.findOne.mockResolvedValue({ _id: 'r1' });
+    mockRewardEventModel.findOne.mockResolvedValue({
+      _id: new Types.ObjectId(eventId),
+    });
+    mockRewardModel.findOne.mockResolvedValue({
+      _id: new Types.ObjectId(rewardId),
+    });
     mockRewardRequestModel.exists.mockResolvedValue(false);
     mockRewardRequestModel.create.mockResolvedValue(mockRewardRequest);
 
     const result = await service.tryGrantReward({
-      userId: 'user1',
+      userId,
       eventCode: 'ATT_101',
-      date: '2025-05-18',
+      date: '2025-05-20',
     });
 
-    expect(result).toEqual(mockRewardRequest); // 정상 보상 지급
-    expect(mockRewardRequestModel.create).toBeCalledWith({
-      userId: 'user1',
-      eventId: 'e1',
-      rewardId: 'r1',
-      date: '2025-05-18',
+    expect(mockRewardRequestModel.create).toHaveBeenCalledWith({
+      userId: new Types.ObjectId(userId),
+      eventId: new Types.ObjectId(eventId),
+      rewardId: new Types.ObjectId(rewardId),
       status: RewardRequestStatus.SUCCESS,
     });
+    expect(result).toEqual(mockRewardRequest);
   });
 });
