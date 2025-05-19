@@ -1,6 +1,6 @@
 {
 	"info": {
-		"_postman_id": "f3d5b154-57a7-44a1-a814-2b7e745cdbc5",
+		"_postman_id": "fdd2cb52-ae89-4741-9301-dab2e7f64dd4",
 		"name": "EVENT_PLATFORM_NODE18",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
 		"_exporter_id": "37863420"
@@ -17,7 +17,7 @@
 							"bearer": [
 								{
 									"key": "token",
-									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2ODI4N2IxYzg2MzgyYTlkNzE4OTkzMGUiLCJlbWFpbCI6InVzZXJAZXhhbXBsZS5jb20iLCJyb2xlIjoiVVNFUiIsImlhdCI6MTc0NzQ4MzU4MywiZXhwIjoxNzQ3NDg3MTgzfQ.UiZoj_hU3y7ZvTy--cx7h1WeNint8R9EhNeTm7IWJUo",
+									"value": "",
 									"type": "string"
 								}
 							]
@@ -326,7 +326,7 @@
 			]
 		},
 		{
-			"name": "EVENT",
+			"name": "EVENT (ADMIN은 모두 접근 가능)",
 			"item": [
 				{
 					"name": "이벤트 등록 (OPERATOR 전용)",
@@ -464,7 +464,7 @@
 							"bearer": [
 								{
 									"key": "token",
-									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2ODI4ZWY1NDUzZWI5NzU5Y2VhZjlkMjAiLCJlbWFpbCI6InVzZXJAZXhhbXBsZS5jb20iLCJyb2xlIjoiVVNFUiIsImlhdCI6MTc0NzUxMzMxMywiZXhwIjoxNzQ3NTE2OTEzfQ.VOE1rpzv65gUm51-yaBP_PMwgSvUGmuOufg0uB2iVMU",
+									"value": "",
 									"type": "string"
 								}
 							]
@@ -507,7 +507,7 @@
 					"response": []
 				},
 				{
-					"name": "전체 보상 요청 조회 (AUDITOR/ADMIN 전용)",
+					"name": "전체 보상 요청 조회 (AUDITOR 전용)",
 					"request": {
 						"auth": {
 							"type": "bearer",
