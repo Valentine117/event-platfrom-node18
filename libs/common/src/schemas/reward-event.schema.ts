@@ -1,6 +1,7 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
 import { EventStatus } from '@lib/common/enums/event-status.enum';
+import { EventType } from '@lib/common/enums/event-type.enum';
 
 export type RewardEventDocument = RewardEvent & Document;
 
@@ -29,8 +30,15 @@ export class RewardEvent {
   @Prop({ required: true })
   endDate: Date;
 
-  @Prop({ required: true, type: Object })
-  conditions: Record<string, any>;
+  @Prop({
+    required: true,
+    type: String,
+    enum: EventType,
+  })
+  eventType: EventType;
+
+  @Prop({ required: true, min: 1 })
+  streak: number;
 }
 
 export const RewardEventSchema = SchemaFactory.createForClass(RewardEvent);

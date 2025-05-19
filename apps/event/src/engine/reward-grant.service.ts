@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import {
   RewardEvent,
   RewardEventDocument,
@@ -38,18 +38,16 @@ export class RewardGrantService {
     if (!reward) return null;
 
     const alreadyGiven = await this.rewardRequestModel.exists({
-      userId,
+      userId: new Types.ObjectId(userId),
       eventId: event._id,
       rewardId: reward._id,
-      date,
     });
     if (alreadyGiven) return null;
 
     const result = await this.rewardRequestModel.create({
-      userId,
+      userId: new Types.ObjectId(userId),
       eventId: event._id,
       rewardId: reward._id,
-      date,
       status: RewardRequestStatus.SUCCESS,
     });
 

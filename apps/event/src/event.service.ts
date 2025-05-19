@@ -54,7 +54,7 @@ export class EventService {
   async updateEvent(eventId: string, dto: UpdateEventDto) {
     try {
       const updated = await this.eventModel.findByIdAndUpdate(
-        eventId,
+        new Types.ObjectId(eventId),
         { $set: dto },
         { new: true, runValidators: true },
       );
@@ -105,7 +105,7 @@ export class EventService {
     }
 
     const reward = await this.rewardModel.findOne({
-      _id: dto.rewardId,
+      _id: new Types.ObjectId(dto.rewardId),
       eventId: new Types.ObjectId(eventId),
     });
     if (!reward) {
@@ -118,8 +118,8 @@ export class EventService {
     const isActive = rewardEvent.status === 'ACTIVE';
 
     const alreadyRequested = await this.requestModel.findOne({
-      eventId,
-      userId,
+      eventId: new Types.ObjectId(eventId),
+      userId: new Types.ObjectId(userId),
     });
 
     const status =
@@ -128,9 +128,9 @@ export class EventService {
         : RewardRequestStatus.SUCCESS;
 
     const request = new this.requestModel({
-      eventId,
-      userId,
-      rewardId: dto.rewardId,
+      eventId: new Types.ObjectId(eventId),
+      userId: new Types.ObjectId(userId),
+      rewardId: new Types.ObjectId(dto.rewardId),
       status,
     });
 
@@ -156,7 +156,7 @@ export class EventService {
   async getRequestsByUser(userId: string) {
     try {
       return await this.requestModel
-        .find({ userId })
+        .find({ userId: new Types.ObjectId(userId) })
         .populate('rewardId eventId');
     } catch {
       throw new InternalServerErrorException(

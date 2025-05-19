@@ -30,6 +30,7 @@
 - **ADMIN** 계정은 모든 API 요청 권한을 가지고 있습니다.
 - `POST /event`: 이벤트 생성(OPERATOR).
 - `GET /event`: 이벤트 목록 조회(공용).
+- `PATCH /event/{eventId}`: 이벤트 수정(OPERATOR).
 - `POST /event/{eventId}/rewards`: 보상 등록(OPERATOR).
 - `POST /event/{eventId}/request`: 보상 요청(USER).
 - `GET /event/requests`: 전체 요청 이력 조회(AUDITOR).
@@ -49,7 +50,8 @@
 ### 3. 보상 처리
 - 보상은 `Reward` 엔티티로 관리, 이벤트와 1:N 관계.
 - 보상 요청 시 `RewardRequest` 생성으로 중복 지급 방지.
-- 중복 판단 기준: `(userId, eventId, rewardId, date)`.
+- 중복 판단 기준: `(userId, eventId, rewardId)`.
+- 중복 시 status FAIL 인 RewardRequest 생성을 통한 실패 보상 요청 이력 확인 가능.
 
 ### 4. API 흐름
 - **Gateway**: JWT 토큰 검증 및 역할 기반 권한 검사.
@@ -61,6 +63,11 @@
 ## 스키마 구조
 ### User 사용자/관리자
 ```ts
+import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import { Document } from 'mongoose';
+
+export type UserDocument = User & Document;
+
 export enum UserRole {
   USER = 'USER',
   OPERATOR = 'OPERATOR',
@@ -79,14 +86,19 @@ export class User {
   @Prop({ required: true, enum: UserRole, default: UserRole.USER })
   role: UserRole;
 }
+
+export const UserSchema = SchemaFactory.createForClass(User);
+
 ```
 
 ### RewardEvent 이벤트
 ```ts
-export enum EventStatus {
-  ACTIVE = 'ACTIVE',
-  INACTIVE = 'INACTIVE',
-}
+import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import { Document } from 'mongoose';
+import { EventStatus } from '@lib/common/enums/event-status.enum';
+import { EventType } from '@lib/common/enums/event-type.enum';
+
+export type RewardEventDocument = RewardEvent & Document;
 
 @Schema({ timestamps: true })
 export class RewardEvent {
@@ -96,7 +108,12 @@ export class RewardEvent {
   @Prop()
   description: string;
 
-  @Prop({ required: true, enum: EventStatus, default: EventStatus.INACTIVE })
+  @Prop({
+    required: true,
+    type: String,
+    enum: EventStatus,
+    default: EventStatus.INACTIVE,
+  })
   status: EventStatus;
 
   @Prop({ required: true })
@@ -108,13 +125,38 @@ export class RewardEvent {
   @Prop({ required: true })
   endDate: Date;
 
-  @Prop({ required: true, type: Object })
-  conditions: Record<string, any>;
+  @Prop({
+    required: true,
+    type: String,
+    enum: EventType,
+  })
+  eventType: EventType;
+
+  @Prop({ required: true, min: 1 })
+  streak: number;
 }
+
+export const RewardEventSchema = SchemaFactory.createForClass(RewardEvent);
+
+// rewards virtual 필드 추가
+RewardEventSchema.virtual('rewards', {
+  ref: 'Reward', // 참조할 모델 이름
+  localField: '_id', // RewardEvent의 _id
+  foreignField: 'eventId', // Reward의 eventId
+});
+
+// JSON으로 응답 시 virtual 포함되도록 설정
+RewardEventSchema.set('toObject', { virtuals: true });
+RewardEventSchema.set('toJSON', { virtuals: true });
 ```
 
 ### Reward 이벤트 보상
 ```ts
+import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import { Document, Types } from 'mongoose';
+
+export type RewardDocument = Reward & Document;
+
 export enum RewardType {
   POINT = 'POINT',
   ITEM = 'ITEM',
@@ -132,13 +174,20 @@ export class Reward {
   @Prop({ required: true })
   quantity: number;
 
-  @Prop({ type: Types.ObjectId, ref: 'Event', required: true })
+  @Prop({ type: Types.ObjectId, ref: 'RewardEvent', required: true })
   eventId: Types.ObjectId;
 }
+
+export const RewardSchema = SchemaFactory.createForClass(Reward);
 ```
 
 ### RewardRequest 유저 보상 발급 이력
 ```ts
+import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import { Document, Types } from 'mongoose';
+
+export type RewardRequestDocument = RewardRequest & Document;
+
 export enum RewardRequestStatus {
   PENDING = 'PENDING',
   SUCCESS = 'SUCCESS',
@@ -159,13 +208,13 @@ export class RewardRequest {
   @Prop({ enum: RewardRequestStatus, default: RewardRequestStatus.PENDING })
   status: RewardRequestStatus;
 }
+
+export const RewardRequestSchema = SchemaFactory.createForClass(RewardRequest);
 ```
 
 ## 테스트 방법
 ### 1. 프로젝트 실행
 ```bash
-git clone <repository-url>
-cd <repository-directory>
 docker-compose up --build
 ```
 - **주의**: Redis와 RabbitMQ 부팅이 느릴 수 있으므로, `https://localhost:3000/health`로 서비스 상태 확인 후 테스트 진행.
@@ -177,8 +226,8 @@ docker-compose down -v --remove-orphans
 ```
 - 반복 실행 시 `npm install` 디스크 공간 부족 에러 방지를 위해 볼륨 정리 권장.
 
-### 3. Postman 테스트
-- 루트 디렉토리의 `EVENT_PLATFORM_NODE18_TEST.postman_collection.json`을 Postman으로 가져와 테스트.
+### 3. Postman / Swagger 테스트
+- 루트 디렉토리의 `EVENT_PLATFORM_NODE18.postman_collection.json`을 Postman으로 가져와 테스트.
 - 또는 `https://localhost:3000/apis`의 Swagger로 테스트 가능.
 
 ### 4. API 테스트 (사전 등록 이벤트 보상 흐름)
@@ -234,52 +283,54 @@ curl -k 'https://localhost:3000/event' \
 ```json
 [
   {
-    "_id": "68299a7cbefb350b7a65d0fb",
+    "_id": "682b48e5a5d20b236e65d0fb",
     "code": "ATT_101",
     "name": "1일 출석 이벤트",
     "description": "하루 1회 로그인 시 출석 보상",
     "status": "ACTIVE",
     "startDate": "2025-01-01T00:00:00.000Z",
     "endDate": "2025-12-31T00:00:00.000Z",
-    "conditions": { "type": "login_1day" },
-    "createdAt": "2025-05-18T08:29:48.890Z",
-    "updatedAt": "2025-05-18T08:29:48.890Z",
+    "eventType": "LOGIN",
+    "streak": 1,
+    "createdAt": "2025-05-19T15:06:13.650Z",
+    "updatedAt": "2025-05-19T15:06:13.650Z",
     "rewards": [
       {
-        "_id": "68299a7cbefb350b7a65d0fc",
+        "_id": "682b48e5a5d20b236e65d0fc",
         "name": "출석 포인트 1000",
         "type": "POINT",
         "quantity": 1000,
-        "eventId": "68299a7cbefb350b7a65d0fb",
-        "createdAt": "2025-05-18T08:29:48.899Z",
-        "updatedAt": "2025-05-18T08:29:48.899Z"
+        "eventId": "682b48e5a5d20b236e65d0fb",
+        "createdAt": "2025-05-19T15:06:13.658Z",
+        "updatedAt": "2025-05-19T15:06:13.658Z"
       }
     ],
-    "id": "68299a7cbefb350b7a65d0fb"
+    "id": "682b48e5a5d20b236e65d0fb"
   },
   {
-    "_id": "68299a7cbefb350b7a65d0fd",
+    "_id": "682b48e5a5d20b236e65d0fd",
     "code": "ATT_102",
     "name": "이스터 에그 이벤트",
     "description": "하루 로그인 5회 시 보상 지급!",
     "status": "ACTIVE",
     "startDate": "2025-01-01T00:00:00.000Z",
     "endDate": "2025-12-31T00:00:00.000Z",
-    "conditions": { "type": "login_count", "threshold": 5 },
-    "createdAt": "2025-05-18T08:29:48.910Z",
-    "updatedAt": "2025-05-18T08:29:48.910Z",
+    "eventType": "LOGIN",
+    "streak": 5,
+    "createdAt": "2025-05-19T15:06:13.680Z",
+    "updatedAt": "2025-05-19T15:06:13.680Z",
     "rewards": [
       {
-        "_id": "68299a7cbefb350b7a65d0fe",
+        "_id": "682b48e5a5d20b236e65d0fe",
         "name": "이스터 에그 포인트 100",
         "type": "POINT",
         "quantity": 100,
-        "eventId": "68299a7cbefb350b7a65d0fd",
-        "createdAt": "2025-05-18T08:29:48.912Z",
-        "updatedAt": "2025-05-18T08:29:48.912Z"
+        "eventId": "682b48e5a5d20b236e65d0fd",
+        "createdAt": "2025-05-19T15:06:13.682Z",
+        "updatedAt": "2025-05-19T15:06:13.682Z"
       }
     ],
-    "id": "68299a7cbefb350b7a65d0fd"
+    "id": "682b48e5a5d20b236e65d0fd"
   }
 ]
 ```
@@ -307,33 +358,34 @@ curl -k 'https://localhost:3000/event/requests/me' \
 ```json
 [
   {
-    "_id": "68299b59449876934c7e6b94",
-    "userId": "68299b34fda07e59dae8d4ec",
+    "_id": "682b49b7dbe5608921cc03d6",
+    "userId": "682b49b1a8874db219e9ef47",
     "eventId": {
-      "_id": "68299a7cbefb350b7a65d0fb",
+      "_id": "682b48e5a5d20b236e65d0fb",
       "code": "ATT_101",
       "name": "1일 출석 이벤트",
       "description": "하루 1회 로그인 시 출석 보상",
       "status": "ACTIVE",
       "startDate": "2025-01-01T00:00:00.000Z",
       "endDate": "2025-12-31T00:00:00.000Z",
-      "conditions": { "type": "login_1day" },
-      "createdAt": "2025-05-18T08:29:48.890Z",
-      "updatedAt": "2025-05-18T08:29:48.890Z",
-      "id": "68299a7cbefb350b7a65d0fb"
+      "eventType": "LOGIN",
+      "streak": 1,
+      "createdAt": "2025-05-19T15:06:13.650Z",
+      "updatedAt": "2025-05-19T15:06:13.650Z",
+      "id": "682b48e5a5d20b236e65d0fb"
     },
     "rewardId": {
-      "_id": "68299a7cbefb350b7a65d0fc",
+      "_id": "682b48e5a5d20b236e65d0fc",
       "name": "출석 포인트 1000",
       "type": "POINT",
       "quantity": 1000,
-      "eventId": "68299a7cbefb350b7a65d0fb",
-      "createdAt": "2025-05-18T08:29:48.899Z",
-      "updatedAt": "2025-05-18T08:29:48.899Z"
+      "eventId": "682b48e5a5d20b236e65d0fb",
+      "createdAt": "2025-05-19T15:06:13.658Z",
+      "updatedAt": "2025-05-19T15:06:13.658Z"
     },
     "status": "SUCCESS",
-    "createdAt": "2025-05-18T08:33:29.822Z",
-    "updatedAt": "2025-05-18T08:33:29.822Z",
+    "createdAt": "2025-05-19T15:09:43.073Z",
+    "updatedAt": "2025-05-19T15:09:43.073Z",
     "__v": 0
   }
 ]
@@ -354,70 +406,204 @@ curl -k 'https://localhost:3000/event/requests/me' \
 ```json
 [
   {
-    "_id": "68299b59449876934c7e6b94",
-    "userId": "68299b34fda07e59dae8d4ec",
+    "_id": "682b49b7dbe5608921cc03d6",
+    "userId": "682b49b1a8874db219e9ef47",
     "eventId": {
-      "_id": "68299a7cbefb350b7a65d0fb",
+      "_id": "682b48e5a5d20b236e65d0fb",
       "code": "ATT_101",
       "name": "1일 출석 이벤트",
       "description": "하루 1회 로그인 시 출석 보상",
       "status": "ACTIVE",
       "startDate": "2025-01-01T00:00:00.000Z",
       "endDate": "2025-12-31T00:00:00.000Z",
-      "conditions": { "type": "login_1day" },
-      "createdAt": "2025-05-18T08:29:48.890Z",
-      "updatedAt": "2025-05-18T08:29:48.890Z",
-      "id": "68299a7cbefb350b7a65d0fb"
+      "eventType": "LOGIN",
+      "streak": 1,
+      "createdAt": "2025-05-19T15:06:13.650Z",
+      "updatedAt": "2025-05-19T15:06:13.650Z",
+      "id": "682b48e5a5d20b236e65d0fb"
     },
     "rewardId": {
-      "_id": "68299a7cbefb350b7a65d0fc",
+      "_id": "682b48e5a5d20b236e65d0fc",
       "name": "출석 포인트 1000",
       "type": "POINT",
       "quantity": 1000,
-      "eventId": "68299a7cbefb350b7a65d0fb",
-      "createdAt": "2025-05-18T08:29:48.899Z",
-      "updatedAt": "2025-05-18T08:29:48.899Z"
+      "eventId": "682b48e5a5d20b236e65d0fb",
+      "createdAt": "2025-05-19T15:06:13.658Z",
+      "updatedAt": "2025-05-19T15:06:13.658Z"
     },
     "status": "SUCCESS",
-    "createdAt": "2025-05-18T08:33:29.822Z",
-    "updatedAt": "2025-05-18T08:33:29.822Z",
+    "createdAt": "2025-05-19T15:09:43.073Z",
+    "updatedAt": "2025-05-19T15:09:43.073Z",
     "__v": 0
   },
   {
-    "_id": "68299c70449876934c7e6b9c",
-    "userId": "68299b34fda07e59dae8d4ec",
+    "_id": "682b4a44dbe5608921cc03e1",
+    "userId": "682b49b1a8874db219e9ef47",
     "eventId": {
-      "_id": "68299a7cbefb350b7a65d0fd",
+      "_id": "682b48e5a5d20b236e65d0fd",
       "code": "ATT_102",
       "name": "이스터 에그 이벤트",
       "description": "하루 로그인 5회 시 보상 지급!",
       "status": "ACTIVE",
       "startDate": "2025-01-01T00:00:00.000Z",
       "endDate": "2025-12-31T00:00:00.000Z",
-      "conditions": { "type": "login_count", "threshold": 5 },
-      "createdAt": "2025-05-18T08:29:48.910Z",
-      "updatedAt": "2025-05-18T08:29:48.910Z",
-      "id": "68299a7cbefb350b7a65d0fd"
+      "eventType": "LOGIN",
+      "streak": 5,
+      "createdAt": "2025-05-19T15:06:13.680Z",
+      "updatedAt": "2025-05-19T15:06:13.680Z",
+      "id": "682b48e5a5d20b236e65d0fd"
     },
     "rewardId": {
-      "_id": "68299a7cbefb350b7a65d0fe",
+      "_id": "682b48e5a5d20b236e65d0fe",
       "name": "이스터 에그 포인트 100",
       "type": "POINT",
       "quantity": 100,
-      "eventId": "68299a7cbefb350b7a65d0fd",
-      "createdAt": "2025-05-18T08:29:48.912Z",
-      "updatedAt": "2025-05-18T08:29:48.912Z"
+      "eventId": "682b48e5a5d20b236e65d0fd",
+      "createdAt": "2025-05-19T15:06:13.682Z",
+      "updatedAt": "2025-05-19T15:06:13.682Z"
     },
     "status": "SUCCESS",
-    "createdAt": "2025-05-18T08:38:08.189Z",
-    "updatedAt": "2025-05-18T08:38:08.189Z",
+    "createdAt": "2025-05-19T15:12:04.522Z",
+    "updatedAt": "2025-05-19T15:12:04.522Z",
     "__v": 0
   }
 ]
 ```
 
-#### (6) 역할별 추가 테스트
-- 이벤트/보상 등록 및 요청은 `https://localhost:3000/apis` 또는 Postman으로 역할별 테스트 가능.
+#### (6) 유저가 이미 받은 보상 직접 재요청 및 요청 실패 이력 확인
+```bash
+# 이미 받은 1일 출석 이벤트 재요청 {eventId}, REWARD_ID 직접 입력
+curl -X 'POST' \
+  'https://localhost:3000/event/{eventId}/request' \
+  -H 'accept: */*' \
+  -H 'Authorization: Bearer YOUR_TOKEN' \
+  -H 'Content-Type: application/json' \
+  -d '{
+  "rewardId": "REWARD_ID"
+}'
+```
+- 응답: status FAILED 생성
+```json
+{
+  "userId": "682b49b1a8874db219e9ef47",
+  "eventId": "682b48e5a5d20b236e65d0fb",
+  "rewardId": "682b48e5a5d20b236e65d0fc",
+  "status": "FAILED",
+  "_id": "682b4b48dbe5608921cc03ec",
+  "createdAt": "2025-05-19T15:16:24.117Z",
+  "updatedAt": "2025-05-19T15:16:24.117Z",
+  "__v": 0
+}
+```
+
+- 유저 자신의 보상 재확인
+```bash
+# 보상 확인
+curl -k 'https://localhost:3000/event/requests/me' \
+--header 'Authorization: Bearer YOUR_TOKEN'
+```
+
+- 응답: 배열 마지막에 status: FAILED 요청 확인 가능
+```json
+[
+  {
+    "_id": "682b49b7dbe5608921cc03d6",
+    "userId": "682b49b1a8874db219e9ef47",
+    "eventId": {
+      "_id": "682b48e5a5d20b236e65d0fb",
+      "code": "ATT_101",
+      "name": "1일 출석 이벤트",
+      "description": "하루 1회 로그인 시 출석 보상",
+      "status": "ACTIVE",
+      "startDate": "2025-01-01T00:00:00.000Z",
+      "endDate": "2025-12-31T00:00:00.000Z",
+      "eventType": "LOGIN",
+      "streak": 1,
+      "createdAt": "2025-05-19T15:06:13.650Z",
+      "updatedAt": "2025-05-19T15:06:13.650Z",
+      "id": "682b48e5a5d20b236e65d0fb"
+    },
+    "rewardId": {
+      "_id": "682b48e5a5d20b236e65d0fc",
+      "name": "출석 포인트 1000",
+      "type": "POINT",
+      "quantity": 1000,
+      "eventId": "682b48e5a5d20b236e65d0fb",
+      "createdAt": "2025-05-19T15:06:13.658Z",
+      "updatedAt": "2025-05-19T15:06:13.658Z"
+    },
+    "status": "SUCCESS",
+    "createdAt": "2025-05-19T15:09:43.073Z",
+    "updatedAt": "2025-05-19T15:09:43.073Z",
+    "__v": 0
+  },
+  {
+    "_id": "682b4a44dbe5608921cc03e1",
+    "userId": "682b49b1a8874db219e9ef47",
+    "eventId": {
+      "_id": "682b48e5a5d20b236e65d0fd",
+      "code": "ATT_102",
+      "name": "이스터 에그 이벤트",
+      "description": "하루 로그인 5회 시 보상 지급!",
+      "status": "ACTIVE",
+      "startDate": "2025-01-01T00:00:00.000Z",
+      "endDate": "2025-12-31T00:00:00.000Z",
+      "eventType": "LOGIN",
+      "streak": 5,
+      "createdAt": "2025-05-19T15:06:13.680Z",
+      "updatedAt": "2025-05-19T15:06:13.680Z",
+      "id": "682b48e5a5d20b236e65d0fd"
+    },
+    "rewardId": {
+      "_id": "682b48e5a5d20b236e65d0fe",
+      "name": "이스터 에그 포인트 100",
+      "type": "POINT",
+      "quantity": 100,
+      "eventId": "682b48e5a5d20b236e65d0fd",
+      "createdAt": "2025-05-19T15:06:13.682Z",
+      "updatedAt": "2025-05-19T15:06:13.682Z"
+    },
+    "status": "SUCCESS",
+    "createdAt": "2025-05-19T15:12:04.522Z",
+    "updatedAt": "2025-05-19T15:12:04.522Z",
+    "__v": 0
+  },
+  {
+    "_id": "682b4b48dbe5608921cc03ec",
+    "userId": "682b49b1a8874db219e9ef47",
+    "eventId": {
+      "_id": "682b48e5a5d20b236e65d0fb",
+      "code": "ATT_101",
+      "name": "1일 출석 이벤트",
+      "description": "하루 1회 로그인 시 출석 보상",
+      "status": "ACTIVE",
+      "startDate": "2025-01-01T00:00:00.000Z",
+      "endDate": "2025-12-31T00:00:00.000Z",
+      "eventType": "LOGIN",
+      "streak": 1,
+      "createdAt": "2025-05-19T15:06:13.650Z",
+      "updatedAt": "2025-05-19T15:06:13.650Z",
+      "id": "682b48e5a5d20b236e65d0fb"
+    },
+    "rewardId": {
+      "_id": "682b48e5a5d20b236e65d0fc",
+      "name": "출석 포인트 1000",
+      "type": "POINT",
+      "quantity": 1000,
+      "eventId": "682b48e5a5d20b236e65d0fb",
+      "createdAt": "2025-05-19T15:06:13.658Z",
+      "updatedAt": "2025-05-19T15:06:13.658Z"
+    },
+    "status": "FAILED",
+    "createdAt": "2025-05-19T15:16:24.117Z",
+    "updatedAt": "2025-05-19T15:16:24.117Z",
+    "__v": 0
+  }
+]
+```
+
+#### (7) AUDITOR, ADMIN, OPERATOR 역할별 추가 테스트
+- 이벤트/보상 등록 및 수정은 `https://localhost:3000/apis` 또는 Postman으로 역할별 테스트 가능.
 
 ## 구현 중 고민과 선택
 ### JWT + 역할 기반(Role-Based) 접근 제어
@@ -597,7 +783,7 @@ db.rewards.insertOne({
 - cron 기반의 예약 이벤트 또는 특정 시간대 자동 실행 로직 추가 가능
 - 인프라 단계로 고도화 시 스케줄러 로직 API화 후 AWS EventBridge를 통해 정해진 시간에 이벤트 트리거 설정 + Lambda 함수를 호출하여 예약된 작업을 실행
 
-###쿠폰 발급/사용 로직 추가.
+### 쿠폰 발급/사용 로직 추가.
 - 포인트 외에 쿠폰/아이템 보상 타입도 확장 가능 (이미 Reward.type으로 COUPON, ITEM 타입 지원)
 - 쿠폰은 UUID 기반으로 생성 + 유저별 매핑 후 사용 여부 추적 필요
 

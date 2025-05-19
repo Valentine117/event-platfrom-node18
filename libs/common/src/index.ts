@@ -26,3 +26,4 @@ export * from '@lib/common/config/login-event.publisher';
 //enum
 export * from '@lib/common/enums/event-code.enum';
 export * from '@lib/common/enums/event-status.enum';
+export * from '@lib/common/enums/event-type.enum';
