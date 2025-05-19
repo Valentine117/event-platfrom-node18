@@ -38,24 +38,27 @@
 
 ## 설계 의도 및 구조 선택 이유
 ### 1. 이벤트 설계
-- 이벤트는 `RewardEvent` 클래스로 정의되며, 고유 `code`로 관리(예: `ATT_101` - 1일 출석, `ATT_102` - 5회 로그인).
-- `Event` 대신 `RewardEvent`를 사용해 NestJS 내장 객체와의 충돌 방지.
-- 조건(`conditions`)은 JSON 객체로 유연성 확보.
+- 이벤트는 `RewardEvent` 클래스로 정의되며, 고유 code를 기준으로 관리.
+  예: ATT_101 (1일 1회 로그인), ATT_102 (하루 5회 로그인), REF_001 (추천 보상 이벤트)
+- NestJS 예약어인 Event와의 충돌을 피하기 위해 `RewardEvent`라는 명칭을 사용.
+- 이벤트의 타입은 LOGIN, RECOMMEND 등으로 enum화하여 조건을 명시적으로 구분.
 
-### 2. 조건 검증
-- 로그인 시 RabbitMQ로 메시지 발행, 이벤트 서버에서 Redis로 조건 검증.
-  - 출석: `attendance:{userId}:{yyyy-mm-dd}` 키로 1일 1회 기록.
-  - 로그인 횟수: `login-count:{userId}:{yyyy-mm-dd}` 키를 `incr()`로 증가, TTL 적용.
+### 2. 조건 검증 (Redis + MQ 기반)
+- 로그인 성공 시 Gateway에서 user.logged_in 이벤트를 RabbitMQ로 발행.
+- 이벤트 서버에서 MQ를 consume한 이후 Redis를 기반으로 보상 조건을 확인.
+- 출석 체크: attendance:{userId}:{yyyy-mm-dd} → 하루 1회 TTL(86400)로 체크.
+- 로그인 횟수: login-count:{userId}:{yyyy-mm-dd} → INCR로 카운팅, TTL 적용.
 
 ### 3. 보상 처리
 - 보상은 `Reward` 엔티티로 관리, 이벤트와 1:N 관계.
-- 보상 요청 시 `RewardRequest` 생성으로 중복 지급 방지.
-- 중복 판단 기준: `(userId, eventId, rewardId)`.
-- 중복 시 status FAIL 인 RewardRequest 생성을 통한 실패 보상 요청 이력 확인 가능.
+- 조건 충족 시 `RewardRequest`를 생성하여 지급 여부 기록
+- 보상 요청 중복 여부는 `(userId, eventId, rewardId)` 조합으로 판단
+- 중복 혹은 `RewardEvent`의 status가 INACTIVE 혹은 이벤트 기간 `stardDate`, `endDate`에 해당하지 않을 시 status FAIL 인 `RewardRequest` 생성을 통한 실패 보상 요청 이력 확인 가능.
 
 ### 4. API 흐름
 - **Gateway**: JWT 토큰 검증 및 역할 기반 권한 검사.
 - **Auth**: `Client → Gateway → Auth → Gateway → Client`로 회원가입/로그인 처리, JWT 반환.
+  - 단 로그인 성공 시 Gateway가 RabbitMQ로 userId 발행 후 Event 서버에서 Redis로 조건 검증 후 보상 지급.
 - **Event**: `Client → Gateway → Event → Gateway → Client`로 이벤트/보상 처리.
 - `docker-compose up --build` 시 `mongo-init.js`로 초기 이벤트 및 보상 등록.
 - 로그인 성공 시 Gateway가 `userId`를 RabbitMQ로 발행, 이벤트 서버는 Redis로 조건 검증 후 보상 지급.
