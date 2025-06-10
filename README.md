@@ -12,7 +12,7 @@
 - **HTTPS + 화이트리스 IP**: Gateway는 인증서를 통해 HTTPS를 지원하며, 고정 IP로 화이트리스트 통신을 구현.
 - **Docker**: docker-compose.yml로 Gateway, Auth, Event, MongoDB, Redis, RabbitMQ를 한 줄 명령어로 실행 가능.
 
-## 서버 아키텍처 (잠시 대기하면 사진이 로딩됩니다.)
+## 서버 아키텍처
 ![스크린샷 2025-05-18 오후 6 01 59](https://github.com/user-attachments/assets/81938ada-2781-453b-99b8-fa818a6dad79)
 
 ## Swagger 경로
